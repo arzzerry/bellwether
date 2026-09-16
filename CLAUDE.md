@@ -47,9 +47,10 @@ are reserved strictly for gains and losses, never for interface state.
 ## Hosting
 No secrets, no backend — safe as a public repo.
 
-- **Primary: Cloudflare Pages** → https://bellwether.pages.dev/ (project
-  `bellwether`, production branch `main`). Deployed by **direct upload** of
-  `docs/` via wrangler, which is already OAuth-authenticated locally.
+- **Primary: Cloudflare Pages** → https://bellwether-5uj.pages.dev/ (project
+  `bellwether`, production branch `main`). The plain `bellwether.pages.dev`
+  was already taken globally, hence the suffix. Deployed by **direct upload**
+  of `docs/` via wrangler, which is already OAuth-authenticated locally.
 - **Mirror: GitHub Pages** → https://arzzerry.github.io/bellwether/ (serves
   `/docs` on `main`, auto-updates on push).
 
