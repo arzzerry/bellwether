@@ -1,0 +1,5 @@
+{
+  // Cloudflare Pages (static). Lets `wrangler pages deploy` run with no flags.
+  "name": "bellwether",
+  "pages_build_output_dir": "docs"
+}

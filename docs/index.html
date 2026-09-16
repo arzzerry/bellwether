@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Bellwether</title>
+<meta name="description" content="A private watchlist, portfolio tracker, screener and trade journal that keeps everything on your own machine." />
+<meta name="theme-color" content="#0a1414" />
+<meta name="bw-version" content="1.0" />
+<style>
+:root{
+  --ink:#0a1414;
+  --ink-2:#0d1c1b;
+  --glass:rgba(23,48,46,.52);
+  --glass-2:rgba(30,60,57,.42);
+  --glass-3:rgba(38,72,68,.38);
+  --line:rgba(216,201,163,.13);
+  --line-2:rgba(216,201,163,.22);
+  --sand:#d8c9a3;
+  --sand-2:#b9a983;
+  --sand-3:#8d8064;
+  --text:#e9efec;
+  --text-2:#9db2ae;
+  --text-3:#6b817e;
+  --up:#5fbf8f;
+  --up-bg:rgba(95,191,143,.12);
+  --down:#d97a6c;
+  --down-bg:rgba(217,122,108,.12);
+  --radius:16px;
+  --radius-sm:10px;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --pad:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--sans);
+  background:var(--ink);
+  color:var(--text);
+  font-size:15px;
+  line-height:1.5;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+body::before{
+  content:"";position:fixed;inset:0;z-index:-2;
+  background:
+    radial-gradient(900px 620px at 12% -8%, rgba(127,176,163,.20), transparent 62%),
+    radial-gradient(760px 540px at 96% 4%, rgba(216,201,163,.11), transparent 58%),
+    radial-gradient(1000px 800px at 50% 108%, rgba(23,48,46,.75), transparent 70%),
+    linear-gradient(180deg,#0a1414 0%,#091716 45%,#08100f 100%);
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.045;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='.6'/></svg>");
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:none;padding:0}
+a{color:var(--sand);text-decoration:none}
+a:hover{text-decoration:underline}
+::selection{background:rgba(216,201,163,.25)}
+
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 120px}
+
+/* ---------- header ---------- */
+header.top{
+  position:sticky;top:0;z-index:40;
+  backdrop-filter:blur(18px) saturate(140%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+  background:linear-gradient(180deg,rgba(10,20,20,.88),rgba(10,20,20,.62));
+  border-bottom:1px solid var(--line);
+}
+.top-in{max-width:1180px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:14px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.mark{width:30px;height:30px;flex:none}
+.brand h1{font-size:19px;margin:0;font-weight:600;letter-spacing:.2px}
+.brand .tag{font-size:11px;color:var(--text-3);letter-spacing:.14em;text-transform:uppercase;margin-top:-2px}
+.top-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
+.icon-btn{
+  width:36px;height:36px;border-radius:10px;border:1px solid var(--line);
+  background:var(--glass-2);display:grid;place-items:center;color:var(--text-2);
+  transition:.15s;
+}
+.icon-btn:hover{color:var(--sand);border-color:var(--line-2);background:var(--glass-3)}
+.icon-btn svg{width:17px;height:17px}
+.stale{font-size:11.5px;color:var(--text-3);font-family:var(--mono);white-space:nowrap}
+
+/* ---------- tabs ---------- */
+nav.tabs{
+  position:sticky;top:55px;z-index:35;
+  backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  background:linear-gradient(180deg,rgba(10,20,20,.8),rgba(10,20,20,.4));
+  border-bottom:1px solid var(--line);
+}
+.tabs-in{max-width:1180px;margin:0 auto;padding:0 16px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tabs-in::-webkit-scrollbar{display:none}
+.tab{
+  padding:12px 15px;font-size:14px;color:var(--text-3);border-bottom:2px solid transparent;
+  white-space:nowrap;transition:.15s;font-weight:500;
+}
+.tab:hover{color:var(--text-2)}
+.tab.on{color:var(--sand);border-bottom-color:var(--sand)}
+
+/* ---------- cards ---------- */
+.card{
+  background:var(--glass);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  backdrop-filter:blur(16px) saturate(130%);
+  -webkit-backdrop-filter:blur(16px) saturate(130%);
+  box-shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 18px 40px -28px rgba(0,0,0,.9);
+}
+.card.pad{padding:var(--pad)}
+.section{margin-top:22px}
+.section-head{display:flex;align-items:center;gap:12px;margin:0 2px 12px}
+.section-head h2{font-size:15px;font-weight:600;margin:0;letter-spacing:.1px}
+.section-head .sub{font-size:12.5px;color:var(--text-3)}
+.section-head .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+
+/* ---------- buttons ---------- */
+.btn{
+  padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--line-2);
+  background:var(--glass-2);color:var(--text);font-size:13.5px;font-weight:500;
+  transition:.15s;display:inline-flex;align-items:center;gap:7px;
+}
+.btn:hover{background:var(--glass-3);border-color:var(--sand-3)}
+.btn.primary{background:var(--sand);color:#12211f;border-color:var(--sand)}
+.btn.primary:hover{background:#e6d8b6}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--text-3)}
+.btn.ghost:hover{color:var(--text);background:var(--glass-2)}
+.btn.sm{padding:5px 10px;font-size:12.5px}
+.btn.danger{color:var(--down);border-color:rgba(217,122,108,.3)}
+.btn.danger:hover{background:var(--down-bg)}
+.btn svg{width:15px;height:15px}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+
+/* ---------- inputs ---------- */
+input[type=text],input[type=number],input[type=date],input[type=password],select,textarea{
+  width:100%;padding:9px 11px;border-radius:var(--radius-sm);
+  border:1px solid var(--line);background:rgba(8,18,17,.55);color:var(--text);
+  font-size:14px;transition:.15s;
+}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--sand-3);background:rgba(8,18,17,.8)}
+input::placeholder,textarea::placeholder{color:var(--text-3)}
+textarea{resize:vertical;min-height:70px;line-height:1.55}
+select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239db2ae' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 9px center;background-size:15px;padding-right:32px}
+label.fld{display:block;margin-bottom:12px}
+label.fld > span{display:block;font-size:12px;color:var(--text-2);margin-bottom:5px;letter-spacing:.02em}
+.row{display:grid;gap:12px}
+.row.c2{grid-template-columns:1fr 1fr}
+.row.c3{grid-template-columns:repeat(3,1fr)}
+.row.c4{grid-template-columns:repeat(4,1fr)}
+
+/* ---------- stats ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.stat{padding:14px 16px;border-radius:var(--radius-sm);background:var(--glass-2);border:1px solid var(--line)}
+.stat .k{font-size:11.5px;color:var(--text-3);letter-spacing:.06em;text-transform:uppercase}
+.stat .v{font-size:22px;font-family:var(--mono);margin-top:5px;letter-spacing:-.4px}
+.stat .d{font-size:12.5px;font-family:var(--mono);margin-top:2px;color:var(--text-3)}
+
+/* ---------- table ---------- */
+.tbl-wrap{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-size:14px}
+table.t th{
+  text-align:right;font-weight:500;font-size:11.5px;color:var(--text-3);
+  letter-spacing:.06em;text-transform:uppercase;padding:0 12px 9px;white-space:nowrap;
+  border-bottom:1px solid var(--line);
+}
+table.t th:first-child,table.t td:first-child{text-align:left;padding-left:2px}
+table.t th.sortable{cursor:pointer}
+table.t th.sortable:hover{color:var(--sand-2)}
+table.t td{padding:11px 12px;text-align:right;border-bottom:1px solid rgba(216,201,163,.07);white-space:nowrap}
+table.t tbody tr{transition:.12s}
+table.t tbody tr:hover{background:rgba(216,201,163,.045)}
+table.t tbody tr.clickable{cursor:pointer}
+table.t td.num{font-family:var(--mono);letter-spacing:-.2px}
+table.t tr:last-child td{border-bottom:none}
+.sym{font-weight:600;letter-spacing:.3px}
+.sym-sub{font-size:12px;color:var(--text-3);font-weight:400;letter-spacing:0;margin-top:1px;max-width:220px;overflow:hidden;text-overflow:ellipsis}
+.up{color:var(--up)}
+.down{color:var(--down)}
+.flat{color:var(--text-3)}
+.pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11.5px;font-family:var(--mono);}
+.pill.up{background:var(--up-bg)}
+.pill.down{background:var(--down-bg)}
+.pill.flat{background:rgba(216,201,163,.08)}
+.tagchip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11.5px;background:rgba(216,201,163,.1);color:var(--sand-2);border:1px solid var(--line);margin:2px 4px 2px 0}
+
+/* ---------- empty ---------- */
+.empty{text-align:center;padding:44px 20px;color:var(--text-3)}
+.empty svg{width:34px;height:34px;opacity:.45;margin-bottom:12px}
+.empty h3{margin:0 0 6px;font-size:15px;font-weight:500;color:var(--text-2)}
+.empty p{margin:0 auto;max-width:400px;font-size:13.5px;line-height:1.6}
+.empty .btn{margin-top:16px}
+
+/* ---------- modal ---------- */
+.scrim{
+  position:fixed;inset:0;z-index:100;background:rgba(4,10,10,.72);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  display:flex;align-items:flex-start;justify-content:center;padding:28px 16px;overflow-y:auto;
+  animation:fade .16s ease;
+}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.modal{
+  width:100%;max-width:560px;background:rgba(17,36,34,.94);
+  border:1px solid var(--line-2);border-radius:var(--radius);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  box-shadow:0 30px 80px -30px rgba(0,0,0,.95);
+  animation:pop .18s cubic-bezier(.2,.9,.3,1.1);
+}
+.modal.wide{max-width:920px}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+.modal-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.modal-head h3{margin:0;font-size:16px;font-weight:600}
+.modal-head .close{margin-left:auto}
+.modal-body{padding:18px}
+.modal-foot{padding:14px 18px;border-top:1px solid var(--line);display:flex;gap:9px;justify-content:flex-end}
+
+/* ---------- toast ---------- */
+#toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
+.toast{
+  padding:10px 18px;border-radius:99px;background:rgba(20,44,42,.95);
+  border:1px solid var(--line-2);font-size:13.5px;backdrop-filter:blur(14px);
+  box-shadow:0 14px 34px -16px rgba(0,0,0,.9);animation:rise .2s ease;max-width:90vw;
+}
+.toast.err{border-color:rgba(217,122,108,.4);color:#f0b9b1}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+
+/* ---------- chart ---------- */
+.chart-box{position:relative;width:100%;height:280px}
+.chart-box svg{width:100%;height:100%;display:block;overflow:visible}
+.cx-line{stroke:var(--sand-3);stroke-width:1;stroke-dasharray:3 3;opacity:.6}
+.tip{
+  position:absolute;pointer-events:none;padding:8px 11px;border-radius:9px;
+  background:rgba(12,28,27,.96);border:1px solid var(--line-2);font-size:12.5px;
+  font-family:var(--mono);white-space:nowrap;z-index:5;line-height:1.5;
+  box-shadow:0 10px 24px -12px rgba(0,0,0,.9);
+}
+.range-btns{display:flex;gap:3px;flex-wrap:wrap}
+.range-btns button{padding:4px 10px;border-radius:7px;font-size:12px;color:var(--text-3);border:1px solid transparent}
+.range-btns button.on{color:var(--sand);background:var(--glass-3);border-color:var(--line)}
+.range-btns button:hover{color:var(--text-2)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--text-3);margin-top:8px}
+.legend i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:5px;border-radius:2px}
+
+/* ---------- sparkline ---------- */
+.spark{width:74px;height:26px;vertical-align:middle;display:inline-block}
+
+/* ---------- detail ---------- */
+.det-head{display:flex;align-items:flex-start;gap:14px;flex-wrap:wrap}
+.det-price{font-size:30px;font-family:var(--mono);letter-spacing:-1px;line-height:1.1}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:1px;background:var(--line);border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--line)}
+.metric{background:rgba(14,30,29,.85);padding:11px 13px}
+.metric .k{font-size:11px;color:var(--text-3);letter-spacing:.04em}
+.metric .v{font-size:15px;font-family:var(--mono);margin-top:3px}
+.news-item{display:block;padding:11px 2px;border-bottom:1px solid rgba(216,201,163,.07);color:var(--text)}
+.news-item:hover{text-decoration:none;color:var(--sand)}
+.news-item .h{font-size:13.5px;line-height:1.45}
+.news-item .m{font-size:11.5px;color:var(--text-3);margin-top:3px;font-family:var(--mono)}
+.bar-row{display:flex;align-items:center;gap:10px;padding:7px 0}
+.bar-row .lbl{width:62px;font-weight:600;font-size:13px;flex:none}
+.bar-track{flex:1;height:7px;border-radius:99px;background:rgba(216,201,163,.09);overflow:hidden}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--sand-3),var(--sand));border-radius:99px}
+.bar-row .val{width:64px;text-align:right;font-family:var(--mono);font-size:12.5px;color:var(--text-2);flex:none}
+
+/* ---------- misc ---------- */
+.note{font-size:12.5px;color:var(--text-3);line-height:1.6}
+.warn{padding:11px 14px;border-radius:var(--radius-sm);background:rgba(216,201,163,.07);border:1px solid var(--line);font-size:13px;color:var(--text-2);line-height:1.6}
+.rule-row{display:grid;grid-template-columns:1.5fr .9fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px}
+.prog{height:3px;border-radius:99px;background:rgba(216,201,163,.1);overflow:hidden;margin-top:10px}
+.prog i{display:block;height:100%;background:var(--sand);transition:width .25s}
+.j-entry{padding:15px 16px;border-radius:var(--radius-sm);background:var(--glass-2);border:1px solid var(--line);margin-bottom:10px}
+.j-entry .jh{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.j-entry .jb{font-size:13.5px;color:var(--text-2);line-height:1.65;margin-top:9px;white-space:pre-wrap}
+.conv{display:inline-flex;gap:2px;vertical-align:middle}
+.conv i{width:6px;height:6px;border-radius:99px;background:rgba(216,201,163,.2)}
+.conv i.on{background:var(--sand)}
+footer.foot{text-align:center;padding:36px 16px 20px;color:var(--text-3);font-size:12px;line-height:1.7}
+
+@media(max-width:720px){
+  .row.c2,.row.c3,.row.c4{grid-template-columns:1fr}
+  .rule-row{grid-template-columns:1fr 1fr;gap:6px}
+  .top-in{padding:10px 14px}
+  .brand h1{font-size:17px}
+  .stat .v{font-size:19px}
+  .det-price{font-size:26px}
+  nav.tabs{top:51px}
+  .modal-body{padding:15px}
+}
+</style>
+<link rel="manifest" href="./manifest.webmanifest" />
+<link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Bellwether" />
+<meta name="mobile-web-app-capable" content="yes" />
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <circle cx="16" cy="16" r="14.5" stroke="rgba(216,201,163,.28)"/>
+        <path d="M6 22.5 L12 15 L17 19 L26 8.5" stroke="#d8c9a3" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="12" cy="15" r="2.1" fill="#7fb0a3"/>
+        <path d="M21.5 8.5 H26 V13" stroke="#d8c9a3" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <h1>Bellwether</h1>
+        <div class="tag">watch · hold · test · record</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span class="stale" id="lastSync"></span>
+      <button class="icon-btn" id="btnRefresh" title="Refresh quotes" aria-label="Refresh quotes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+      </button>
+      <button class="icon-btn" id="btnSettings" title="Settings" aria-label="Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8.9 19a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 5 8.9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9.5a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<nav class="tabs">
+  <div class="tabs-in" id="tabbar">
+    <button class="tab on" data-tab="watch">Watchlist</button>
+    <button class="tab" data-tab="port">Portfolio</button>
+    <button class="tab" data-tab="screen">Screener</button>
+    <button class="tab" data-tab="journal">Journal</button>
+  </div>
+</nav>
+
+<main class="wrap" id="main"></main>
+
+<footer class="foot">
+  Bellwether keeps every holding, note and key in this browser only. Nothing is sent anywhere except the price providers you choose.<br/>
+  For research and record keeping. Not investment advice.
+</footer>
+
+<div id="toasts"></div>
+
+<script>
+"use strict";
+
+/* ============================ helpers ============================ */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
+const clamp = (n,a,b) => Math.max(a, Math.min(b, n));
+const todayISO = () => new Date().toISOString().slice(0,10);
+
+function money(n, dp=2){
+  if(n==null || !isFinite(n)) return "—";
+  const s = Math.abs(n).toLocaleString(undefined,{minimumFractionDigits:dp,maximumFractionDigits:dp});
+  return (n<0?"-":"") + CUR() + s;
+}
+function num(n, dp=2){
+  if(n==null || !isFinite(n)) return "—";
+  return n.toLocaleString(undefined,{minimumFractionDigits:dp,maximumFractionDigits:dp});
+}
+function pct(n, dp=2){
+  if(n==null || !isFinite(n)) return "—";
+  return (n>0?"+":"") + n.toFixed(dp) + "%";
+}
+function compact(n){
+  if(n==null || !isFinite(n)) return "—";
+  const a = Math.abs(n);
+  if(a>=1e12) return (n/1e12).toFixed(2)+"T";
+  if(a>=1e9) return (n/1e9).toFixed(2)+"B";
+  if(a>=1e6) return (n/1e6).toFixed(1)+"M";
+  if(a>=1e3) return (n/1e3).toFixed(1)+"K";
+  return n.toFixed(0);
+}
+const dirClass = n => n==null||!isFinite(n)||n===0 ? "flat" : (n>0?"up":"down");
+function ago(ts){
+  if(!ts) return "never";
+  const s = Math.floor((Date.now()-ts)/1000);
+  if(s<60) return "just now";
+  if(s<3600) return Math.floor(s/60)+"m ago";
+  if(s<86400) return Math.floor(s/3600)+"h ago";
+  return Math.floor(s/86400)+"d ago";
+}
+function niceDate(d){
+  if(!d) return "—";
+  const dt = typeof d === "string" ? new Date(d+"T00:00:00") : new Date(d);
+  if(isNaN(dt)) return "—";
+  return dt.toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"});
+}
+
+function toast(msg, isErr=false){
+  const t = document.createElement("div");
+  t.className = "toast" + (isErr?" err":"");
+  t.textContent = msg;
+  $("#toasts").appendChild(t);
+  setTimeout(()=>{ t.style.transition="opacity .3s"; t.style.opacity="0"; setTimeout(()=>t.remove(),300); }, isErr?4200:2400);
+}
+
+/* ============================ storage ============================ */
+const SKEY = "bellwether.v1";
+const CKEY = "bellwether.cache.v1";
+
+const DEFAULT_STATE = {
+  keys:{ finnhub:"", twelve:"" },
+  settings:{ currency:"$", autoRefresh:true },
+  watch:[],
+  lots:[],
+  journal:[],
+  screens:[],
+  lastSync:0
+};
+
+let S = load();
+let C = loadCache();
+
+function load(){
+  try{
+    const raw = localStorage.getItem(SKEY);
+    if(!raw) return structuredClone(DEFAULT_STATE);
+    const p = JSON.parse(raw);
+    return Object.assign(structuredClone(DEFAULT_STATE), p, {
+      keys: Object.assign({}, DEFAULT_STATE.keys, p.keys||{}),
+      settings: Object.assign({}, DEFAULT_STATE.settings, p.settings||{})
+    });
+  }catch(e){ return structuredClone(DEFAULT_STATE); }
+}
+function save(){
+  try{ localStorage.setItem(SKEY, JSON.stringify(S)); }
+  catch(e){ toast("Could not save. Storage may be full.", true); }
+}
+function loadCache(){
+  try{ return JSON.parse(localStorage.getItem(CKEY)) || {quotes:{},profiles:{},metrics:{},news:{},series:{}}; }
+  catch(e){ return {quotes:{},profiles:{},metrics:{},news:{},series:{}}; }
+}
+function saveCache(){
+  try{ localStorage.setItem(CKEY, JSON.stringify(C)); }
+  catch(e){
+    C.series = {}; C.news = {};
+    try{ localStorage.setItem(CKEY, JSON.stringify(C)); }catch(_){ }
+  }
+}
+const CUR = () => S.settings.currency || "$";
+
+/* ============================ api ============================ */
+/* Two free providers, both optional.
+   Finnhub  — quotes, company profile, fundamentals, news, symbol search. 60/min free.
+   TwelveData — daily price history for charts. 8/min, 800/day free. */
+
+class Limiter{
+  constructor(perMin){ this.gap = 60000/perMin; this.last = 0; this.q = Promise.resolve(); }
+  run(fn){
+    this.q = this.q.then(async ()=>{
+      const wait = this.gap - (Date.now() - this.last);
+      if(wait > 0) await new Promise(r=>setTimeout(r, wait));
+      this.last = Date.now();
+      return fn();
+    });
+    return this.q;
+  }
+}
+const fhLimit = new Limiter(55);
+const tdLimit = new Limiter(7);
+
+class NoKey extends Error{ constructor(p){ super("Add your free "+p+" key in settings."); this.provider=p; } }
+
+async function fh(path, params={}){
+  if(!S.keys.finnhub) throw new NoKey("Finnhub");
+  const u = new URL("https://finnhub.io/api/v1"+path);
+  Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));
+  u.searchParams.set("token", S.keys.finnhub);
+  return fhLimit.run(async ()=>{
+    const r = await fetch(u);
+    if(r.status===401 || r.status===403) throw new Error("Finnhub rejected the key, or this endpoint needs a paid plan.");
+    if(r.status===429) throw new Error("Finnhub rate limit hit. Wait a moment.");
+    if(!r.ok) throw new Error("Finnhub error "+r.status);
+    return r.json();
+  });
+}
+async function td(path, params={}){
+  if(!S.keys.twelve) throw new NoKey("Twelve Data");
+  const u = new URL("https://api.twelvedata.com"+path);
+  Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));
+  u.searchParams.set("apikey", S.keys.twelve);
+  return tdLimit.run(async ()=>{
+    const r = await fetch(u);
+    const j = await r.json().catch(()=>({}));
+    if(j && j.status === "error") throw new Error(j.message || "Twelve Data error");
+    if(!r.ok) throw new Error("Twelve Data error "+r.status);
+    return j;
+  });
+}
+
+const FRESH_QUOTE = 1000*60*10;
+const FRESH_SLOW  = 1000*60*60*24;
+const FRESH_NEWS  = 1000*60*60*6;
+
+async function getQuote(sym, force=false){
+  const c = C.quotes[sym];
+  if(!force && c && Date.now()-c.t < FRESH_QUOTE) return c.d;
+  const j = await fh("/quote", {symbol:sym});
+  if(j.c === 0 && j.pc === 0) throw new Error(sym+" returned no price. Check the ticker.");
+  const d = { price:j.c, chg:j.d, chgPct:j.dp, high:j.h, low:j.l, open:j.o, prev:j.pc };
+  C.quotes[sym] = {t:Date.now(), d};
+  saveCache();
+  return d;
+}
+async function getProfile(sym){
+  const c = C.profiles[sym];
+  if(c && Date.now()-c.t < FRESH_SLOW*7) return c.d;
+  const j = await fh("/stock/profile2", {symbol:sym});
+  const d = { name:j.name||sym, industry:j.finnhubIndustry||"", cap:(j.marketCapitalization||0)*1e6,
+              exchange:j.exchange||"", currency:j.currency||"", web:j.weburl||"", ipo:j.ipo||"", logo:j.logo||"" };
+  C.profiles[sym] = {t:Date.now(), d};
+  saveCache();
+  return d;
+}
+const M_FIELDS = {
+  pe:"peBasicExclExtraTTM", pb:"pbAnnual", ps:"psTTM", roe:"roeTTM", roa:"roaTTM",
+  netMargin:"netProfitMarginTTM", grossMargin:"grossMarginTTM",
+  revGrowth:"revenueGrowthTTMYoy", epsGrowth:"epsGrowthTTMYoy",
+  divYield:"dividendYieldIndicatedAnnual", beta:"beta",
+  debtEq:"totalDebt/totalEquityAnnual", currentRatio:"currentRatioAnnual",
+  hi52:"52WeekHigh", lo52:"52WeekLow", ret1y:"52WeekPriceReturnDaily"
+};
+async function getMetrics(sym){
+  const c = C.metrics[sym];
+  if(c && Date.now()-c.t < FRESH_SLOW) return c.d;
+  const j = await fh("/stock/metric", {symbol:sym, metric:"all"});
+  const m = j.metric || {};
+  const d = {};
+  for(const [k,src] of Object.entries(M_FIELDS)){
+    const v = m[src];
+    d[k] = (typeof v === "number" && isFinite(v)) ? v : null;
+  }
+  C.metrics[sym] = {t:Date.now(), d};
+  saveCache();
+  return d;
+}
+async function getNews(sym){
+  const c = C.news[sym];
+  if(c && Date.now()-c.t < FRESH_NEWS) return c.d;
+  const to = todayISO();
+  const from = new Date(Date.now()-1000*60*60*24*21).toISOString().slice(0,10);
+  const j = await fh("/company-news", {symbol:sym, from, to});
+  const d = (Array.isArray(j)?j:[]).slice(0,12).map(n=>({h:n.headline,u:n.url,s:n.source,t:n.datetime}));
+  C.news[sym] = {t:Date.now(), d};
+  saveCache();
+  return d;
+}
+async function getSeries(sym){
+  const c = C.series[sym];
+  if(c && Date.now()-c.t < FRESH_SLOW) return c.d;
+  const j = await td("/time_series", {symbol:sym, interval:"1day", outputsize:"1300", order:"ASC"});
+  const vals = j.values || [];
+  if(!vals.length) throw new Error("No price history for "+sym);
+  const d = vals.map(v=>({ d:v.datetime, c:parseFloat(v.close), h:parseFloat(v.high), l:parseFloat(v.low), v:parseFloat(v.volume||0) }))
+                .filter(x=>isFinite(x.c));
+  C.series[sym] = {t:Date.now(), d};
+  saveCache();
+  return d;
+}
+async function searchSym(q){
+  const j = await fh("/search", {q});
+  return (j.result||[]).filter(r=>r.type==="Common Stock" || !r.type).slice(0,10)
+    .map(r=>({sym:r.displaySymbol||r.symbol, name:r.description}));
+}
+
+/* ============================ nav ============================ */
+let TAB = "watch";
+const RENDERERS = {};
+
+function go(tab){
+  TAB = tab;
+  $$(".tab").forEach(b=>b.classList.toggle("on", b.dataset.tab===tab));
+  render();
+  window.scrollTo({top:0});
+}
+function render(){
+  $("#main").innerHTML = RENDERERS[TAB]();
+  if(RENDERERS[TAB+"After"]) RENDERERS[TAB+"After"]();
+  $("#lastSync").textContent = S.lastSync ? "synced "+ago(S.lastSync) : "";
+}
+
+$("#tabbar").addEventListener("click", e=>{
+  const b = e.target.closest(".tab");
+  if(b) go(b.dataset.tab);
+});
+
+/* ============================ modal ============================ */
+let onModalClose = null;
+let repaintChart = null;
+function modal(title, bodyHTML, footHTML="", wide=false){
+  closeModal();
+  const s = document.createElement("div");
+  s.className = "scrim";
+  s.innerHTML = `<div class="modal${wide?" wide":""}" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <h3>${esc(title)}</h3>
+      <button class="icon-btn close" data-close aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">${bodyHTML}</div>
+    ${footHTML ? `<div class="modal-foot">${footHTML}</div>` : ""}
+  </div>`;
+  s.addEventListener("click", e=>{ if(e.target===s || e.target.closest("[data-close]")) closeModal(); });
+  document.body.appendChild(s);
+  document.body.style.overflow = "hidden";
+  return s;
+}
+function closeModal(){
+  const s = $(".scrim");
+  if(s) s.remove();
+  document.body.style.overflow = "";
+  if(onModalClose){ const f = onModalClose; onModalClose = null; f(); }
+}
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeModal(); });
+
+function confirmDo(msg, onYes, yesLabel="Delete"){
+  modal("Are you sure?", `<p class="note" style="font-size:14px;color:var(--text-2)">${esc(msg)}</p>`,
+    `<button class="btn ghost" data-close>Cancel</button><button class="btn danger" id="cfmYes">${esc(yesLabel)}</button>`);
+  $("#cfmYes").onclick = ()=>{ closeModal(); onYes(); };
+}
+
+/* ============================ chart ============================ */
+function sma(arr, n){
+  const out = new Array(arr.length).fill(null);
+  let sum = 0;
+  for(let i=0;i<arr.length;i++){
+    sum += arr[i];
+    if(i>=n) sum -= arr[i-n];
+    if(i>=n-1) out[i] = sum/n;
+  }
+  return out;
+}
+const RANGES = {"1M":22,"3M":66,"6M":132,"1Y":252,"5Y":1260,"Max":99999};
+
+function drawChart(box, full, rangeKey, showMA){
+  const keep = RANGES[rangeKey] || 252;
+  const data = full.slice(Math.max(0, full.length - keep));
+  if(data.length < 2){ box.innerHTML = `<div class="empty"><p>Not enough history to chart.</p></div>`; return; }
+
+  const closes = full.map(x=>x.c);
+  const ma50f = sma(closes,50), ma200f = sma(closes,200);
+  const off = full.length - data.length;
+  const ma50 = ma50f.slice(off), ma200 = ma200f.slice(off);
+
+  const W = box.clientWidth || 700, H = box.clientHeight || 280;
+  const P = {t:12, r:52, b:22, l:6};
+  const iw = W - P.l - P.r, ih = H - P.t - P.b;
+
+  let lo = Infinity, hi = -Infinity;
+  data.forEach(d=>{ lo=Math.min(lo,d.c); hi=Math.max(hi,d.c); });
+  if(showMA.m50) ma50.forEach(v=>{ if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v);} });
+  if(showMA.m200) ma200.forEach(v=>{ if(v!=null){lo=Math.min(lo,v);hi=Math.max(hi,v);} });
+  const pad = (hi-lo)*0.08 || 1;
+  lo -= pad; hi += pad;
+
+  const X = i => P.l + (i/(data.length-1))*iw;
+  const Y = v => P.t + ih - ((v-lo)/(hi-lo))*ih;
+
+  const path = vals => {
+    let d = "", started = false;
+    vals.forEach((v,i)=>{
+      if(v==null){ started=false; return; }
+      d += (started?"L":"M") + X(i).toFixed(1) + " " + Y(v).toFixed(1) + " ";
+      started = true;
+    });
+    return d.trim();
+  };
+  const line = path(data.map(d=>d.c));
+  const area = line ? line + ` L ${X(data.length-1).toFixed(1)} ${(P.t+ih).toFixed(1)} L ${X(0).toFixed(1)} ${(P.t+ih).toFixed(1)} Z` : "";
+
+  const up = data[data.length-1].c >= data[0].c;
+  const stroke = up ? "#5fbf8f" : "#d97a6c";
+
+  const ticks = 4;
+  let grid = "";
+  for(let i=0;i<=ticks;i++){
+    const v = lo + (hi-lo)*(i/ticks);
+    const y = Y(v);
+    grid += `<line x1="${P.l}" y1="${y.toFixed(1)}" x2="${P.l+iw}" y2="${y.toFixed(1)}" stroke="rgba(216,201,163,.07)" stroke-width="1"/>`;
+    grid += `<text x="${P.l+iw+8}" y="${(y+4).toFixed(1)}" fill="#6b817e" font-size="11" font-family="var(--mono)">${v.toFixed(v>500?0:2)}</text>`;
+  }
+  const nLab = Math.min(5, data.length);
+  let xlab = "";
+  for(let i=0;i<nLab;i++){
+    const idx = Math.round(i*(data.length-1)/(nLab-1||1));
+    const dt = new Date(data[idx].d);
+    const txt = dt.toLocaleDateString(undefined,{month:"short",year:keep>260?"2-digit":undefined,day:keep<70?"numeric":undefined});
+    xlab += `<text x="${X(idx).toFixed(1)}" y="${H-5}" fill="#6b817e" font-size="11" text-anchor="${i===0?"start":(i===nLab-1?"end":"middle")}">${esc(txt)}</text>`;
+  }
+
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${stroke}" stop-opacity=".22"/>
+      <stop offset="100%" stop-color="${stroke}" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${grid}${xlab}
+    <path d="${area}" fill="url(#ag)"/>
+    ${showMA.m200 ? `<path d="${path(ma200)}" fill="none" stroke="#7fb0a3" stroke-width="1.2" opacity=".85"/>` : ""}
+    ${showMA.m50 ? `<path d="${path(ma50)}" fill="none" stroke="#d8c9a3" stroke-width="1.2" opacity=".85"/>` : ""}
+    <path d="${line}" fill="none" stroke="${stroke}" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/>
+    <g id="cx" style="display:none">
+      <line class="cx-line" y1="${P.t}" y2="${P.t+ih}"/>
+      <circle r="3.5" fill="${stroke}" stroke="#0a1414" stroke-width="1.5"/>
+    </g>
+  </svg><div class="tip" style="display:none"></div>`;
+
+  const svg = box.querySelector("svg"), cx = box.querySelector("#cx"), tip = box.querySelector(".tip");
+  const cxLine = cx.querySelector("line"), cxDot = cx.querySelector("circle");
+
+  function move(ev){
+    const r = svg.getBoundingClientRect();
+    const px = ((ev.touches?ev.touches[0].clientX:ev.clientX) - r.left) / r.width * W;
+    let i = Math.round((px - P.l)/iw * (data.length-1));
+    i = clamp(i, 0, data.length-1);
+    const d = data[i], x = X(i), y = Y(d.c);
+    cx.style.display = "";
+    cxLine.setAttribute("x1", x); cxLine.setAttribute("x2", x);
+    cxDot.setAttribute("cx", x); cxDot.setAttribute("cy", y);
+    const chg = ((d.c - data[0].c)/data[0].c)*100;
+    tip.innerHTML = `${esc(niceDate(d.d))}<br/><span style="font-size:14px">${money(d.c)}</span> <span class="${dirClass(chg)}">${pct(chg,1)}</span>`;
+    tip.style.display = "";
+    const tw = tip.offsetWidth, boxW = box.clientWidth;
+    const lx = clamp(x/W*boxW - tw/2, 2, boxW - tw - 2);
+    tip.style.left = lx + "px";
+    tip.style.top = clamp(y/H*box.clientHeight - 56, 0, box.clientHeight-50) + "px";
+  }
+  function leave(){ cx.style.display="none"; tip.style.display="none"; }
+  svg.addEventListener("mousemove", move);
+  svg.addEventListener("mouseleave", leave);
+  svg.addEventListener("touchmove", e=>{ move(e); e.preventDefault(); }, {passive:false});
+  svg.addEventListener("touchend", leave);
+}
+
+function sparkSVG(series){
+  if(!series || series.length<2) return "";
+  const d = series.slice(-60).map(x=>x.c);
+  const lo = Math.min(...d), hi = Math.max(...d), rng = (hi-lo)||1;
+  const pts = d.map((v,i)=>`${(i/(d.length-1)*72+1).toFixed(1)},${(24 - (v-lo)/rng*22 + 1).toFixed(1)}`).join(" ");
+  const col = d[d.length-1] >= d[0] ? "#5fbf8f" : "#d97a6c";
+  return `<svg class="spark" viewBox="0 0 74 26"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity=".85"/></svg>`;
+}
+
+/* ============================ watchlist ============================ */
+let watchSort = {k:"sym", dir:1};
+
+RENDERERS.watch = function(){
+  if(!S.watch.length){
+    return card(`<div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+      <h3>Nothing on the watchlist yet</h3>
+      <p>Add a ticker and Bellwether will pull its price, the numbers behind it and recent news, then keep them cached so the list still opens offline.</p>
+      <button class="btn primary" id="wAdd">Add a ticker</button>
+    </div>`) + keyNotice();
+  }
+  const rows = S.watch.map(w=>{
+    const q = (C.quotes[w.sym]||{}).d, p = (C.profiles[w.sym]||{}).d, m = (C.metrics[w.sym]||{}).d, s = (C.series[w.sym]||{}).d;
+    return {w, q, p, m, s};
+  });
+  rows.sort((a,b)=>{
+    const k = watchSort.k;
+    let av, bv;
+    if(k==="sym"){ av=a.w.sym; bv=b.w.sym; return watchSort.dir * av.localeCompare(bv); }
+    if(k==="price"){ av=a.q?.price; bv=b.q?.price; }
+    else if(k==="chg"){ av=a.q?.chgPct; bv=b.q?.chgPct; }
+    else if(k==="cap"){ av=a.p?.cap; bv=b.p?.cap; }
+    else if(k==="pe"){ av=a.m?.pe; bv=b.m?.pe; }
+    av = (av==null||!isFinite(av)) ? -Infinity : av;
+    bv = (bv==null||!isFinite(bv)) ? -Infinity : bv;
+    return watchSort.dir * (av-bv);
+  });
+
+  const body = rows.map(({w,q,p,m,s})=>`
+    <tr class="clickable" data-sym="${esc(w.sym)}">
+      <td>
+        <div class="sym">${esc(w.sym)}</div>
+        <div class="sym-sub">${esc(p?.name || w.note || "")}</div>
+      </td>
+      <td>${sparkSVG(s)}</td>
+      <td class="num">${q?money(q.price):"—"}</td>
+      <td class="num"><span class="pill ${dirClass(q?.chgPct)}">${q?pct(q.chgPct):"—"}</span></td>
+      <td class="num">${p?compact(p.cap):"—"}</td>
+      <td class="num">${m&&m.pe!=null?num(m.pe,1):"—"}</td>
+      <td class="num">${m&&m.divYield!=null?num(m.divYield,2)+"%":"—"}</td>
+      <td><button class="btn ghost sm" data-del="${esc(w.sym)}" title="Remove">✕</button></td>
+    </tr>`).join("");
+
+  const th = (k,label) => `<th class="sortable" data-sort="${k}">${label}${watchSort.k===k?(watchSort.dir>0?" ↑":" ↓"):""}</th>`;
+
+  return `
+  <div class="section">
+    <div class="section-head">
+      <h2>Watchlist</h2>
+      <span class="sub">${S.watch.length} ${S.watch.length===1?"name":"names"}</span>
+      <div class="right">
+        <button class="btn sm" id="wRefresh">Refresh all</button>
+        <button class="btn primary sm" id="wAdd">Add ticker</button>
+      </div>
+    </div>
+    ${card(`<div class="tbl-wrap"><table class="t">
+      <thead><tr>${th("sym","Symbol")}<th></th>${th("price","Price")}${th("chg","Today")}${th("cap","Mkt cap")}${th("pe","P/E")}<th>Yield</th><th></th></tr></thead>
+      <tbody>${body}</tbody>
+    </table></div>`,"")}
+    ${keyNotice()}
+  </div>`;
+};
+
+RENDERERS.watchAfter = function(){
+  const add = $("#wAdd"); if(add) add.onclick = addTickerModal;
+  const ref = $("#wRefresh"); if(ref) ref.onclick = ()=>refreshAll(true);
+  $$("[data-sort]").forEach(h=>h.onclick = ()=>{
+    const k = h.dataset.sort;
+    if(watchSort.k===k) watchSort.dir *= -1; else { watchSort.k=k; watchSort.dir = k==="sym"?1:-1; }
+    render();
+  });
+  $$("[data-del]").forEach(b=>b.onclick = e=>{
+    e.stopPropagation();
+    const sym = b.dataset.del;
+    S.watch = S.watch.filter(w=>w.sym!==sym); save(); render();
+    toast(sym+" removed");
+  });
+  $$("tr[data-sym]").forEach(tr=>tr.onclick = ()=>openSymbol(tr.dataset.sym));
+};
+
+function keyNotice(){
+  if(S.keys.finnhub) return "";
+  return `<div class="section">${card(`<div class="warn">
+    <strong style="color:var(--sand)">No data key yet.</strong> Bellwether reads prices from Finnhub and price history from Twelve Data. Both have a free tier and neither needs a card.
+    Open settings, paste a key, and every panel fills in. Until then the app runs on whatever it has already cached.
+    <div style="margin-top:10px"><button class="btn sm" onclick="settingsModal()">Open settings</button></div>
+  </div>`,"pad")}</div>`;
+}
+const card = (inner, cls="pad") => `<div class="card ${cls}">${inner}</div>`;
+
+function addTickerModal(){
+  modal("Add a ticker", `
+    <label class="fld"><span>Search by name or symbol</span>
+      <input type="text" id="qSym" placeholder="AAPL, or Apple" autocomplete="off" autofocus />
+    </label>
+    <div id="sResults"></div>
+    <p class="note" style="margin-top:12px">Searching needs a Finnhub key. Without one you can still type an exact symbol and press add.</p>
+  `, `<button class="btn ghost" data-close>Cancel</button><button class="btn primary" id="sAdd">Add</button>`);
+
+  const inp = $("#qSym"), res = $("#sResults");
+  let timer;
+  inp.oninput = ()=>{
+    clearTimeout(timer);
+    const q = inp.value.trim();
+    if(q.length<2){ res.innerHTML=""; return; }
+    timer = setTimeout(async ()=>{
+      if(!S.keys.finnhub) return;
+      res.innerHTML = `<p class="note">Searching…</p>`;
+      try{
+        const r = await searchSym(q);
+        res.innerHTML = r.length ? `<div class="tbl-wrap"><table class="t"><tbody>${
+          r.map(x=>`<tr class="clickable" data-pick="${esc(x.sym)}"><td><div class="sym">${esc(x.sym)}</div><div class="sym-sub">${esc(x.name)}</div></td><td><button class="btn sm">Add</button></td></tr>`).join("")
+        }</tbody></table></div>` : `<p class="note">Nothing found.</p>`;
+        $$("[data-pick]", res).forEach(tr=>tr.onclick = ()=>doAdd(tr.dataset.pick));
+      }catch(e){ res.innerHTML = `<p class="note">${esc(e.message)}</p>`; }
+    }, 320);
+  };
+  $("#sAdd").onclick = ()=>doAdd(inp.value.trim().toUpperCase());
+
+  async function doAdd(sym){
+    sym = (sym||"").toUpperCase().trim();
+    if(!sym) return;
+    if(S.watch.some(w=>w.sym===sym)){ toast(sym+" is already on the list"); closeModal(); return; }
+    S.watch.push({sym, note:"", added:Date.now()});
+    save(); closeModal(); render();
+    toast(sym+" added");
+    try{ await hydrate(sym); render(); }catch(e){ toast(e.message, true); }
+  }
+}
+
+async function hydrate(sym, force=false){
+  await getQuote(sym, force);
+  try{ await getProfile(sym); }catch(e){}
+  try{ await getMetrics(sym); }catch(e){}
+}
+
+async function refreshAll(force=false){
+  const syms = Array.from(new Set([...S.watch.map(w=>w.sym), ...S.lots.map(l=>l.sym)]));
+  if(!syms.length){ toast("Nothing to refresh"); return; }
+  if(!S.keys.finnhub){ toast("Add a Finnhub key in settings first.", true); return; }
+  const btn = $("#btnRefresh"); btn.style.opacity = ".4";
+  let ok = 0, fail = 0;
+  for(const s of syms){
+    try{ await hydrate(s, force); ok++; }
+    catch(e){ fail++; }
+    if(TAB==="watch" || TAB==="port") render();
+  }
+  S.lastSync = Date.now(); save();
+  btn.style.opacity = "";
+  render();
+  toast(fail ? `Refreshed ${ok}, ${fail} failed` : `Refreshed ${ok} ${ok===1?"name":"names"}`);
+}
+
+/* ============================ symbol detail ============================ */
+async function openSymbol(sym){
+  const s = modal(sym, `<p class="note">Loading…</p>`, "", true);
+  const body = $(".modal-body", s);
+
+  let q=null,p=null,m=null;
+  try{ q = await getQuote(sym); }catch(e){ q = (C.quotes[sym]||{}).d || null; }
+  try{ p = await getProfile(sym); }catch(e){ p = (C.profiles[sym]||{}).d || null; }
+  try{ m = await getMetrics(sym); }catch(e){ m = (C.metrics[sym]||{}).d || null; }
+  if(!$(".scrim")) return;
+
+  const onWatch = S.watch.some(w=>w.sym===sym);
+  const pos = positionFor(sym);
+
+  const rangeFrom52 = (q && m && m.hi52 && m.lo52) ? ((q.price-m.lo52)/((m.hi52-m.lo52)||1))*100 : null;
+
+  body.innerHTML = `
+    <div class="det-head">
+      <div>
+        <div style="font-size:13px;color:var(--text-2)">${esc(p?.name||"")}</div>
+        <div class="det-price">${q?money(q.price):"—"}</div>
+        <div style="margin-top:4px"><span class="pill ${dirClass(q?.chgPct)}">${q?pct(q.chgPct):"—"}</span>
+          <span class="note" style="margin-left:8px">${q?money(q.chg)+" today":""}</span></div>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm" id="dWatch">${onWatch?"On watchlist":"Add to watchlist"}</button>
+        <button class="btn sm" id="dBuy">Log a buy</button>
+        <button class="btn sm" id="dJournal">Write a note</button>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div class="range-btns" id="ranges">
+        ${Object.keys(RANGES).map(r=>`<button data-r="${r}"${r==="1Y"?' class="on"':""}>${r}</button>`).join("")}
+      </div>
+      <div style="margin-left:auto" class="range-btns">
+        <button data-ma="m50" class="on">50 day</button>
+        <button data-ma="m200" class="on">200 day</button>
+      </div>
+    </div>
+    <div class="chart-box" id="chartBox" style="margin-top:8px"><p class="note">Loading history…</p></div>
+    <div class="legend">
+      <span><i style="background:#d8c9a3"></i>50 day average</span>
+      <span><i style="background:#7fb0a3"></i>200 day average</span>
+      ${rangeFrom52!=null?`<span style="margin-left:auto">${rangeFrom52.toFixed(0)}% of the way up its 52 week range</span>`:""}
+    </div>
+
+    ${pos ? `<div style="margin-top:18px"><div class="section-head"><h2>Your position</h2></div>
+      <div class="metrics">
+        <div class="metric"><div class="k">Shares</div><div class="v">${num(pos.shares,pos.shares%1?4:0)}</div></div>
+        <div class="metric"><div class="k">Average cost</div><div class="v">${money(pos.avg)}</div></div>
+        <div class="metric"><div class="k">Value</div><div class="v">${money(pos.value)}</div></div>
+        <div class="metric"><div class="k">Unrealised</div><div class="v ${dirClass(pos.unreal)}">${money(pos.unreal)}</div></div>
+        <div class="metric"><div class="k">Return</div><div class="v ${dirClass(pos.unrealPct)}">${pct(pos.unrealPct,1)}</div></div>
+      </div></div>` : ""}
+
+    <div style="margin-top:18px"><div class="section-head"><h2>The numbers</h2><span class="sub">trailing twelve months where it applies</span></div>
+    <div class="metrics">
+      ${met("Market cap", p?compact(p.cap):"—")}
+      ${met("P/E", m?num(m.pe,1):"—")}
+      ${met("P/B", m?num(m.pb,2):"—")}
+      ${met("P/S", m?num(m.ps,2):"—")}
+      ${met("Return on equity", m&&m.roe!=null?num(m.roe,1)+"%":"—")}
+      ${met("Net margin", m&&m.netMargin!=null?num(m.netMargin,1)+"%":"—")}
+      ${met("Revenue growth", m&&m.revGrowth!=null?pct(m.revGrowth,1):"—")}
+      ${met("Earnings growth", m&&m.epsGrowth!=null?pct(m.epsGrowth,1):"—")}
+      ${met("Dividend yield", m&&m.divYield!=null?num(m.divYield,2)+"%":"—")}
+      ${met("Debt to equity", m?num(m.debtEq,2):"—")}
+      ${met("Current ratio", m?num(m.currentRatio,2):"—")}
+      ${met("Beta", m?num(m.beta,2):"—")}
+      ${met("52 week high", m?money(m.hi52):"—")}
+      ${met("52 week low", m?money(m.lo52):"—")}
+      ${met("One year return", m&&m.ret1y!=null?pct(m.ret1y,1):"—")}
+      ${met("Industry", p?.industry||"—")}
+    </div></div>
+
+    <div style="margin-top:18px"><div class="section-head"><h2>Recent news</h2></div>
+    <div id="newsBox"><p class="note">Loading…</p></div></div>
+
+    <p class="note" style="margin-top:18px">Figures come from the provider as reported and can lag or carry errors. Check anything you are about to act on against the filing.</p>
+  `;
+
+  $("#dWatch").onclick = ()=>{
+    if(S.watch.some(w=>w.sym===sym)){ toast("Already on the watchlist"); return; }
+    S.watch.push({sym, note:"", added:Date.now()}); save();
+    $("#dWatch").textContent = "On watchlist";
+    toast(sym+" added"); if(TAB==="watch") setTimeout(render,50);
+  };
+  $("#dBuy").onclick = ()=>{ closeModal(); lotModal(null, sym); };
+  $("#dJournal").onclick = ()=>{ closeModal(); journalModal(null, sym); };
+
+  let range = "1Y", ma = {m50:true, m200:true}, series = null;
+  const box = $("#chartBox");
+  function paint(){ if(series && box.isConnected) drawChart(box, series, range, ma); }
+  repaintChart = paint;
+  onModalClose = ()=>{ repaintChart = null; };
+  $$("#ranges button").forEach(b=>b.onclick = ()=>{
+    range = b.dataset.r;
+    $$("#ranges button").forEach(x=>x.classList.toggle("on", x===b));
+    paint();
+  });
+  $$("[data-ma]").forEach(b=>b.onclick = ()=>{
+    ma[b.dataset.ma] = !ma[b.dataset.ma];
+    b.classList.toggle("on", ma[b.dataset.ma]);
+    paint();
+  });
+
+  getSeries(sym).then(d=>{ series = d; paint(); })
+    .catch(e=>{ if(box.isConnected) box.innerHTML = `<div class="empty"><p>${esc(e.message)}</p></div>`; });
+
+  getNews(sym).then(ns=>{
+    const nb = $("#newsBox"); if(!nb) return;
+    nb.innerHTML = ns.length ? ns.map(n=>`<a class="news-item" href="${esc(n.u)}" target="_blank" rel="noopener">
+      <div class="h">${esc(n.h)}</div><div class="m">${esc(n.s||"")} · ${niceDate(n.t*1000)}</div></a>`).join("")
+      : `<p class="note">No recent stories.</p>`;
+  }).catch(e=>{ const nb=$("#newsBox"); if(nb) nb.innerHTML = `<p class="note">${esc(e.message)}</p>`; });
+}
+const met = (k,v) => `<div class="metric"><div class="k">${esc(k)}</div><div class="v">${v}</div></div>`;
+
+/* ============================ portfolio ============================ */
+function lotMath(lot){
+  const sold = (lot.sells||[]).reduce((a,s)=>a+s.shares, 0);
+  const left = Math.max(0, lot.shares - sold);
+  const perShareCost = lot.price + (lot.fees||0)/(lot.shares||1);
+  const q = (C.quotes[lot.sym]||{}).d;
+  const price = q?.price ?? null;
+  const value = price!=null ? left*price : null;
+  const cost = left*perShareCost;
+  const unreal = value!=null ? value-cost : null;
+  const realised = (lot.sells||[]).reduce((a,s)=>a + (s.price*s.shares - (s.fees||0) - s.shares*perShareCost), 0);
+  const dayChg = (price!=null && q?.chg!=null) ? left*q.chg : null;
+  return {left, sold, perShareCost, price, value, cost, unreal,
+          unrealPct: cost>0 && unreal!=null ? unreal/cost*100 : null, realised, dayChg, open:left>1e-9};
+}
+function positionFor(sym){
+  const lots = S.lots.filter(l=>l.sym===sym).map(l=>({l, m:lotMath(l)})).filter(x=>x.m.open);
+  if(!lots.length) return null;
+  const shares = lots.reduce((a,x)=>a+x.m.left,0);
+  const cost = lots.reduce((a,x)=>a+x.m.cost,0);
+  const value = lots.reduce((a,x)=>a+(x.m.value||0),0);
+  return {shares, cost, avg:cost/shares, value, unreal:value-cost, unrealPct: cost>0?(value-cost)/cost*100:null};
+}
+
+RENDERERS.port = function(){
+  const open = S.lots.map(l=>({l, m:lotMath(l)}));
+  const live = open.filter(x=>x.m.open);
+  if(!S.lots.length){
+    return `<div class="section">${card(`<div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>
+      <h3>No holdings recorded</h3>
+      <p>Log what you bought, when, and at what price. Bellwether works out cost basis, current value, what you are up or down, and what you have actually banked.</p>
+      <button class="btn primary" id="pAdd">Log a purchase</button>
+    </div>`)}</div>` + keyNotice();
+  }
+
+  const totVal = live.reduce((a,x)=>a+(x.m.value||0),0);
+  const totCost = live.reduce((a,x)=>a+x.m.cost,0);
+  const totUn = totVal-totCost;
+  const totReal = open.reduce((a,x)=>a+x.m.realised,0);
+  const totDay = live.reduce((a,x)=>a+(x.m.dayChg||0),0);
+
+  const bySym = {};
+  live.forEach(x=>{ bySym[x.l.sym] = (bySym[x.l.sym]||0) + (x.m.value||0); });
+  const alloc = Object.entries(bySym).sort((a,b)=>b[1]-a[1]);
+  const maxAlloc = alloc.length ? alloc[0][1] : 1;
+
+  const rows = live.sort((a,b)=>(b.m.value||0)-(a.m.value||0)).map(({l,m})=>`
+    <tr class="clickable" data-sym="${esc(l.sym)}">
+      <td><div class="sym">${esc(l.sym)}</div><div class="sym-sub">${niceDate(l.date)}${l.note?" · "+esc(l.note):""}</div></td>
+      <td class="num">${num(m.left, m.left%1?4:0)}</td>
+      <td class="num">${money(m.perShareCost)}</td>
+      <td class="num">${m.price!=null?money(m.price):"—"}</td>
+      <td class="num">${m.value!=null?money(m.value):"—"}</td>
+      <td class="num ${dirClass(m.unreal)}">${m.unreal!=null?money(m.unreal):"—"}</td>
+      <td class="num"><span class="pill ${dirClass(m.unrealPct)}">${pct(m.unrealPct,1)}</span></td>
+      <td style="white-space:nowrap">
+        <button class="btn ghost sm" data-sell="${esc(l.id)}" title="Record a sale">Sell</button>
+        <button class="btn ghost sm" data-edit="${esc(l.id)}" title="Edit">Edit</button>
+      </td>
+    </tr>`).join("");
+
+  const closed = open.filter(x=>!x.m.open);
+  const closedRows = closed.map(({l,m})=>`
+    <tr><td><div class="sym">${esc(l.sym)}</div><div class="sym-sub">bought ${niceDate(l.date)}</div></td>
+      <td class="num">${num(l.shares, l.shares%1?4:0)}</td>
+      <td class="num">${money(m.perShareCost)}</td>
+      <td class="num ${dirClass(m.realised)}">${money(m.realised)}</td>
+      <td><button class="btn ghost sm" data-del-lot="${esc(l.id)}">✕</button></td></tr>`).join("");
+
+  return `
+  <div class="section">
+    <div class="section-head"><h2>Portfolio</h2><span class="sub">${live.length} open ${live.length===1?"lot":"lots"}</span>
+      <div class="right"><button class="btn primary sm" id="pAdd">Log a purchase</button></div></div>
+    <div class="stats">
+      <div class="stat"><div class="k">Market value</div><div class="v">${money(totVal)}</div><div class="d">cost ${money(totCost)}</div></div>
+      <div class="stat"><div class="k">Unrealised</div><div class="v ${dirClass(totUn)}">${money(totUn)}</div><div class="d ${dirClass(totUn)}">${pct(totCost>0?totUn/totCost*100:null,1)}</div></div>
+      <div class="stat"><div class="k">Today</div><div class="v ${dirClass(totDay)}">${money(totDay)}</div><div class="d">${pct(totVal-totDay>0?totDay/(totVal-totDay)*100:null,2)}</div></div>
+      <div class="stat"><div class="k">Realised</div><div class="v ${dirClass(totReal)}">${money(totReal)}</div><div class="d">banked from sales</div></div>
+      <div class="stat"><div class="k">Total return</div><div class="v ${dirClass(totUn+totReal)}">${money(totUn+totReal)}</div><div class="d">unrealised plus realised</div></div>
+    </div>
+  </div>
+
+  <div class="section">
+    ${card(`<div class="tbl-wrap"><table class="t">
+      <thead><tr><th>Holding</th><th>Shares</th><th>Cost</th><th>Price</th><th>Value</th><th>Gain</th><th>Return</th><th></th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="8" class="note" style="text-align:center;padding:24px">Everything is closed. Past trades are below.</td></tr>`}</tbody>
+    </table></div>`,"")}
+  </div>
+
+  ${alloc.length ? `<div class="section">
+    <div class="section-head"><h2>Where the money sits</h2></div>
+    ${card(alloc.map(([sym,v])=>`<div class="bar-row">
+      <div class="lbl">${esc(sym)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(v/maxAlloc*100).toFixed(1)}%"></div></div>
+      <div class="val">${totVal>0?(v/totVal*100).toFixed(1)+"%":"—"}</div>
+    </div>`).join(""))}
+  </div>` : ""}
+
+  ${closed.length ? `<div class="section">
+    <div class="section-head"><h2>Closed</h2><span class="sub">realised profit and loss</span></div>
+    ${card(`<div class="tbl-wrap"><table class="t">
+      <thead><tr><th>Holding</th><th>Shares</th><th>Cost</th><th>Realised</th><th></th></tr></thead>
+      <tbody>${closedRows}</tbody></table></div>`,"")}
+  </div>` : ""}
+  ${keyNotice()}`;
+};
+
+RENDERERS.portAfter = function(){
+  const a = $("#pAdd"); if(a) a.onclick = ()=>lotModal();
+  $$("[data-edit]").forEach(b=>b.onclick = e=>{ e.stopPropagation(); lotModal(b.dataset.edit); });
+  $$("[data-sell]").forEach(b=>b.onclick = e=>{ e.stopPropagation(); sellModal(b.dataset.sell); });
+  $$("[data-del-lot]").forEach(b=>b.onclick = e=>{
+    e.stopPropagation();
+    const id = b.dataset.delLot;
+    confirmDo("This removes the lot and its sale history for good.", ()=>{
+      S.lots = S.lots.filter(l=>l.id!==id); save(); render(); toast("Lot deleted");
+    });
+  });
+  $$("tr[data-sym]").forEach(tr=>tr.onclick = ()=>openSymbol(tr.dataset.sym));
+};
+
+function lotModal(id=null, presetSym=""){
+  const l = id ? S.lots.find(x=>x.id===id) : null;
+  modal(l?"Edit lot":"Log a purchase", `
+    <div class="row c2">
+      <label class="fld"><span>Ticker</span><input type="text" id="lSym" value="${esc(l?l.sym:presetSym)}" placeholder="AAPL" ${l?"readonly":""} /></label>
+      <label class="fld"><span>Date bought</span><input type="date" id="lDate" value="${esc(l?l.date:todayISO())}" /></label>
+    </div>
+    <div class="row c3">
+      <label class="fld"><span>Shares</span><input type="number" id="lShares" step="any" min="0" value="${l?l.shares:""}" placeholder="0" /></label>
+      <label class="fld"><span>Price per share</span><input type="number" id="lPrice" step="any" min="0" value="${l?l.price:""}" placeholder="0.00" /></label>
+      <label class="fld"><span>Fees</span><input type="number" id="lFees" step="any" min="0" value="${l?(l.fees||0):0}" /></label>
+    </div>
+    <label class="fld"><span>Note (optional)</span><input type="text" id="lNote" value="${esc(l?l.note||"":"")}" placeholder="Why this, why now" /></label>
+    <p class="note" id="lCost"></p>
+  `, `${l?'<button class="btn danger" id="lDel">Delete</button>':""}<button class="btn ghost" data-close>Cancel</button><button class="btn primary" id="lSave">${l?"Save":"Add"}</button>`);
+
+  const upd = ()=>{
+    const sh = parseFloat($("#lShares").value)||0, pr = parseFloat($("#lPrice").value)||0, fe = parseFloat($("#lFees").value)||0;
+    $("#lCost").textContent = sh&&pr ? `Total outlay ${money(sh*pr+fe)}, ${money(pr + fe/sh)} a share all in.` : "";
+  };
+  ["lShares","lPrice","lFees"].forEach(i=>$("#"+i).oninput = upd);
+  upd();
+
+  if(l) $("#lDel").onclick = ()=>confirmDo("Delete this lot and any sales recorded against it?", ()=>{
+    S.lots = S.lots.filter(x=>x.id!==id); save(); closeModal(); render(); toast("Lot deleted");
+  });
+
+  $("#lSave").onclick = async ()=>{
+    const sym = $("#lSym").value.trim().toUpperCase();
+    const shares = parseFloat($("#lShares").value);
+    const price = parseFloat($("#lPrice").value);
+    if(!sym){ toast("Enter a ticker", true); return; }
+    if(!(shares>0)){ toast("Enter how many shares", true); return; }
+    if(!(price>=0)){ toast("Enter the price you paid", true); return; }
+    const rec = {
+      id: l?l.id:uid(), sym, shares, price,
+      fees: parseFloat($("#lFees").value)||0,
+      date: $("#lDate").value || todayISO(),
+      note: $("#lNote").value.trim(),
+      sells: l?l.sells||[]:[]
+    };
+    if(l) S.lots = S.lots.map(x=>x.id===l.id?rec:x); else S.lots.push(rec);
+    save(); closeModal(); render();
+    toast(l?"Lot updated":sym+" added to the portfolio");
+    if(!C.quotes[sym]){ try{ await hydrate(sym); render(); }catch(e){} }
+  };
+}
+
+function sellModal(id){
+  const l = S.lots.find(x=>x.id===id);
+  if(!l) return;
+  const m = lotMath(l);
+  const q = (C.quotes[l.sym]||{}).d;
+  modal("Record a sale of "+l.sym, `
+    <p class="note" style="margin-bottom:14px">You hold ${num(m.left, m.left%1?4:0)} shares at ${money(m.perShareCost)} all in.</p>
+    <div class="row c3">
+      <label class="fld"><span>Shares sold</span><input type="number" id="sShares" step="any" min="0" max="${m.left}" value="${m.left}" /></label>
+      <label class="fld"><span>Price per share</span><input type="number" id="sPrice" step="any" min="0" value="${q?q.price:""}" /></label>
+      <label class="fld"><span>Fees</span><input type="number" id="sFees" step="any" min="0" value="0" /></label>
+    </div>
+    <label class="fld"><span>Date</span><input type="date" id="sDate" value="${todayISO()}" /></label>
+    <p class="note" id="sOut"></p>
+    ${(l.sells||[]).length ? `<div style="margin-top:14px"><div class="section-head"><h2>Already sold</h2></div>
+      ${(l.sells||[]).map(s=>`<div class="note" style="padding:5px 0">${niceDate(s.date)} — ${num(s.shares,s.shares%1?4:0)} at ${money(s.price)}</div>`).join("")}</div>` : ""}
+  `, `<button class="btn ghost" data-close>Cancel</button><button class="btn primary" id="sSave">Record sale</button>`);
+
+  const upd = ()=>{
+    const sh = parseFloat($("#sShares").value)||0, pr = parseFloat($("#sPrice").value)||0, fe = parseFloat($("#sFees").value)||0;
+    if(!sh || !pr){ $("#sOut").textContent = ""; return; }
+    const gain = pr*sh - fe - sh*m.perShareCost;
+    $("#sOut").innerHTML = `Proceeds ${money(pr*sh-fe)}. Realised <span class="${dirClass(gain)}">${money(gain)}</span>, a return of <span class="${dirClass(gain)}">${pct(gain/(sh*m.perShareCost)*100,1)}</span>.`;
+  };
+  ["sShares","sPrice","sFees"].forEach(i=>$("#"+i).oninput = upd);
+  upd();
+
+  $("#sSave").onclick = ()=>{
+    const sh = parseFloat($("#sShares").value), pr = parseFloat($("#sPrice").value);
+    if(!(sh>0) || sh > m.left + 1e-9){ toast("Enter a number of shares you actually hold", true); return; }
+    if(!(pr>=0)){ toast("Enter the sale price", true); return; }
+    l.sells = l.sells || [];
+    l.sells.push({id:uid(), shares:sh, price:pr, fees:parseFloat($("#sFees").value)||0, date:$("#sDate").value||todayISO()});
+    save(); closeModal(); render(); toast("Sale recorded");
+  };
+}
+
+/* ============================ screener ============================ */
+const UNIVERSE = ("AAPL MSFT GOOGL AMZN NVDA META TSLA BRK.B AVGO JPM LLY V UNH XOM MA JNJ PG COST HD MRK ABBV CVX ADBE WMT PEP KO CRM AMD BAC NFLX TMO MCD CSCO ACN ABT LIN DHR INTC WFC VZ DIS TXN PM CAT NEE INTU AMGN CMCSA PFE UNP LOW IBM GE COP QCOM SPGI HON BA NKE UPS AMAT RTX ELV BKNG SBUX DE PLD BLK MDT GILD ADI T LMT MDLZ ISRG SYK ADP MMC VRTX REGN CVS CI SCHW ZTS MO TJX CB SO PGR BSX DUK EQIX ITW CME NOC SLB APD BDG CL ETN MU MCK FDX AON PSA ORLY CSX MAR MSI EMR NSC GD WM ROP AJG AFL TRV PSX TGT F GM DAL LUV EBAY PYPL SQ SHOP UBER ABNB SNOW CRWD PANW NOW TEAM DDOG NET ZS OKTA TWLO ROKU PINS SNAP SPOT").split(" ");
+
+const S_FIELDS = [
+  {k:"price", label:"Price", fmt:v=>money(v)},
+  {k:"chgPct", label:"Today %", fmt:v=>pct(v,2)},
+  {k:"cap", label:"Market cap", fmt:v=>compact(v)},
+  {k:"pe", label:"P/E", fmt:v=>num(v,1)},
+  {k:"pb", label:"P/B", fmt:v=>num(v,2)},
+  {k:"ps", label:"P/S", fmt:v=>num(v,2)},
+  {k:"roe", label:"Return on equity %", fmt:v=>num(v,1)},
+  {k:"netMargin", label:"Net margin %", fmt:v=>num(v,1)},
+  {k:"revGrowth", label:"Revenue growth %", fmt:v=>num(v,1)},
+  {k:"epsGrowth", label:"Earnings growth %", fmt:v=>num(v,1)},
+  {k:"divYield", label:"Dividend yield %", fmt:v=>num(v,2)},
+  {k:"beta", label:"Beta", fmt:v=>num(v,2)},
+  {k:"debtEq", label:"Debt to equity", fmt:v=>num(v,2)},
+  {k:"currentRatio", label:"Current ratio", fmt:v=>num(v,2)},
+  {k:"ret1y", label:"One year return %", fmt:v=>num(v,1)},
+  {k:"from52hi", label:"Below 52w high %", fmt:v=>num(v,1)},
+  {k:"from52lo", label:"Above 52w low %", fmt:v=>num(v,1)}
+];
+const fieldLabel = k => (S_FIELDS.find(f=>f.k===k)||{}).label || k;
+const fieldFmt = (k,v) => v==null||!isFinite(v) ? "—" : (S_FIELDS.find(f=>f.k===k)||{fmt:x=>num(x,2)}).fmt(v);
+
+const PRESETS = {
+  "Quality at a fair price":[{f:"pe",o:"<",v:22},{f:"roe",o:">",v:15},{f:"debtEq",o:"<",v:1.5},{f:"netMargin",o:">",v:8}],
+  "Deep value":[{f:"pb",o:"<",v:1.5},{f:"pe",o:"<",v:12},{f:"currentRatio",o:">",v:1.2}],
+  "Dividend payers":[{f:"divYield",o:">",v:2.5},{f:"debtEq",o:"<",v:2}],
+  "Near the 52 week low":[{f:"from52lo",o:"<",v:12}],
+  "Growing fast":[{f:"revGrowth",o:">",v:15},{f:"epsGrowth",o:">",v:15}]
+};
+
+let scr = { rules:[{f:"pe",o:"<",v:20}], results:null, running:false, sort:{k:"cap",dir:-1}, universe:"broad" };
+
+function screenRow(r, i){
+  return `<div class="rule-row" data-i="${i}">
+    <select data-rf>${S_FIELDS.map(f=>`<option value="${f.k}"${f.k===r.f?" selected":""}>${esc(f.label)}</option>`).join("")}</select>
+    <select data-ro>
+      <option value="<"${r.o==="<"?" selected":""}>is under</option>
+      <option value=">"${r.o===">"?" selected":""}>is over</option>
+    </select>
+    <input type="number" step="any" data-rv value="${r.v}" />
+    <button class="btn ghost sm" data-rdel>✕</button>
+  </div>`;
+}
+
+RENDERERS.screen = function(){
+  const res = scr.results;
+  return `
+  <div class="section">
+    <div class="section-head"><h2>Screener</h2><span class="sub">your rules, run over ${scr.universe==="broad"?UNIVERSE.length+" large companies":"your own names"}</span></div>
+    ${card(`
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+        ${Object.keys(PRESETS).map(p=>`<button class="btn sm" data-preset="${esc(p)}">${esc(p)}</button>`).join("")}
+      </div>
+      <div id="rules">${scr.rules.map(screenRow).join("")}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px">
+        <button class="btn sm" id="rAdd">Add a rule</button>
+        <select id="uni" style="width:auto;min-width:200px">
+          <option value="broad"${scr.universe==="broad"?" selected":""}>Search the large company list</option>
+          <option value="mine"${scr.universe==="mine"?" selected":""}>Only my watchlist and holdings</option>
+        </select>
+        <button class="btn primary sm" id="rRun" style="margin-left:auto" ${scr.running?"disabled":""}>${scr.running?"Running…":"Run screen"}</button>
+      </div>
+      <div class="prog" id="prog" style="display:none"><i style="width:0%"></i></div>
+      <p class="note" id="progNote" style="margin-top:8px"></p>
+    `)}
+  </div>
+
+  ${res ? `<div class="section">
+    <div class="section-head"><h2>Matches</h2><span class="sub">${res.rows.length} of ${res.scanned} passed</span>
+      <div class="right"><button class="btn ghost sm" id="rClear">Clear</button></div></div>
+    ${card(res.rows.length ? `<div class="tbl-wrap"><table class="t">
+      <thead><tr><th>Symbol</th>${res.cols.map(c=>`<th class="sortable" data-scol="${c}">${esc(fieldLabel(c))}${scr.sort.k===c?(scr.sort.dir>0?" ↑":" ↓"):""}</th>`).join("")}<th></th></tr></thead>
+      <tbody>${sortedRows(res).map(r=>`<tr class="clickable" data-sym="${esc(r.sym)}">
+        <td><div class="sym">${esc(r.sym)}</div><div class="sym-sub">${esc(r.name||"")}</div></td>
+        ${res.cols.map(c=>`<td class="num">${fieldFmt(c, r[c])}</td>`).join("")}
+        <td><button class="btn ghost sm" data-add="${esc(r.sym)}">Watch</button></td>
+      </tr>`).join("")}</tbody></table></div>`
+      : `<div class="empty"><h3>Nothing passed</h3><p>Loosen a rule and run it again. Screens that return nothing are usually one threshold away from returning too much.</p></div>`,"")}
+  </div>` : ""}
+
+  <div class="section">${card(`<p class="note">
+    A screen is a filter, not a verdict. It can only see the numbers the provider happens to report, it misses anything qualitative, and a company can look cheap for a very good reason. Treat a match as the start of the reading, not the end of it.
+  </p>`)}</div>
+  ${keyNotice()}`;
+};
+
+function sortedRows(res){
+  const k = scr.sort.k, d = scr.sort.dir;
+  return res.rows.slice().sort((a,b)=>{
+    let av = a[k], bv = b[k];
+    if(typeof av === "string") return d*av.localeCompare(bv);
+    av = (av==null||!isFinite(av)) ? -Infinity : av;
+    bv = (bv==null||!isFinite(bv)) ? -Infinity : bv;
+    return d*(av-bv);
+  });
+}
+
+RENDERERS.screenAfter = function(){
+  const bind = ()=>{
+    $$("#rules .rule-row").forEach(row=>{
+      const i = +row.dataset.i;
+      $("[data-rf]",row).onchange = e=>{ scr.rules[i].f = e.target.value; };
+      $("[data-ro]",row).onchange = e=>{ scr.rules[i].o = e.target.value; };
+      $("[data-rv]",row).oninput = e=>{ scr.rules[i].v = parseFloat(e.target.value); };
+      $("[data-rdel]",row).onclick = ()=>{ scr.rules.splice(i,1); if(!scr.rules.length) scr.rules.push({f:"pe",o:"<",v:20}); render(); };
+    });
+  };
+  bind();
+  $("#rAdd").onclick = ()=>{ scr.rules.push({f:"roe",o:">",v:10}); render(); };
+  $("#uni").onchange = e=>{ scr.universe = e.target.value; };
+  $$("[data-preset]").forEach(b=>b.onclick = ()=>{
+    scr.rules = PRESETS[b.dataset.preset].map(r=>({...r}));
+    render(); toast(b.dataset.preset+" loaded");
+  });
+  const clear = $("#rClear"); if(clear) clear.onclick = ()=>{ scr.results=null; render(); };
+  $$("[data-scol]").forEach(h=>h.onclick = ()=>{
+    const k = h.dataset.scol;
+    if(scr.sort.k===k) scr.sort.dir *= -1; else { scr.sort.k=k; scr.sort.dir=-1; }
+    render();
+  });
+  $$("[data-add]").forEach(b=>b.onclick = e=>{
+    e.stopPropagation();
+    const sym = b.dataset.add;
+    if(S.watch.some(w=>w.sym===sym)){ toast("Already watching "+sym); return; }
+    S.watch.push({sym, note:"", added:Date.now()}); save(); toast(sym+" added to the watchlist");
+    b.textContent = "Watching"; b.disabled = true;
+  });
+  $$("tr[data-sym]").forEach(tr=>tr.onclick = ()=>openSymbol(tr.dataset.sym));
+  $("#rRun").onclick = runScreen;
+};
+
+async function runScreen(){
+  const syms = scr.universe==="broad"
+    ? Array.from(new Set([...UNIVERSE, ...S.watch.map(w=>w.sym)]))
+    : Array.from(new Set([...S.watch.map(w=>w.sym), ...S.lots.map(l=>l.sym)]));
+  if(!syms.length){ toast("Nothing to screen. Add some names first.", true); return; }
+  if(!S.keys.finnhub && !syms.some(s=>C.metrics[s])){
+    toast("Add a Finnhub key in settings first.", true); return;
+  }
+
+  scr.running = true;
+  const btn = $("#rRun"); btn.disabled = true; btn.textContent = "Running…";
+  const prog = $("#prog"); prog.style.display = "";
+  const bar = $("i", prog), note = $("#progNote");
+
+  const rules = scr.rules.filter(r=>isFinite(r.v));
+  const cols = Array.from(new Set(["cap","price", ...rules.map(r=>r.f)]));
+  const rows = [];
+  let done = 0, errs = 0;
+
+  for(const sym of syms){
+    try{
+      const m = await getMetrics(sym);
+      let q = (C.quotes[sym]||{}).d;
+      const needQuote = rules.some(r=>r.f==="price"||r.f==="chgPct") || !q;
+      if(needQuote){ try{ q = await getQuote(sym); }catch(e){} }
+      const p = await getProfile(sym).catch(()=>null);
+
+      const rec = {sym, name:p?.name||"", cap:p?.cap??null, price:q?.price??null, chgPct:q?.chgPct??null, ...m};
+      rec.from52hi = (q?.price && m.hi52) ? (m.hi52-q.price)/m.hi52*100 : null;
+      rec.from52lo = (q?.price && m.lo52) ? (q.price-m.lo52)/m.lo52*100 : null;
+
+      const pass = rules.every(r=>{
+        const v = rec[r.f];
+        if(v==null || !isFinite(v)) return false;
+        return r.o==="<" ? v < r.v : v > r.v;
+      });
+      if(pass) rows.push(rec);
+    }catch(e){ errs++; }
+    done++;
+    if(bar){
+      bar.style.width = (done/syms.length*100).toFixed(1)+"%";
+      note.textContent = `Checked ${done} of ${syms.length}. ${rows.length} passing so far.`;
+    }
+  }
+
+  scr.running = false;
+  scr.results = {rows, cols, scanned:syms.length};
+  scr.sort = {k:"cap", dir:-1};
+  render();
+  toast(errs ? `${rows.length} matches, ${errs} could not be read` : `${rows.length} matches`);
+}
+
+/* ============================ journal ============================ */
+let jFilter = {q:"", status:"all"};
+
+RENDERERS.journal = function(){
+  let entries = S.journal.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  if(jFilter.status==="open") entries = entries.filter(e=>!e.outcome);
+  if(jFilter.status==="closed") entries = entries.filter(e=>!!e.outcome);
+  if(jFilter.q){
+    const q = jFilter.q.toLowerCase();
+    entries = entries.filter(e=>(e.sym+" "+e.thesis+" "+(e.tags||[]).join(" ")).toLowerCase().includes(q));
+  }
+
+  if(!S.journal.length){
+    return `<div class="section">${card(`<div class="empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>
+      <h3>No entries yet</h3>
+      <p>Write down what you thought before you find out whether you were right. Months later the journal is the only honest record of your reasoning, and the only way to see which kinds of thinking actually pay.</p>
+      <button class="btn primary" id="jAdd">Write the first entry</button>
+    </div>`)}</div>`;
+  }
+
+  const closed = S.journal.filter(e=>e.outcome && isFinite(e.outcome.result));
+  const wins = closed.filter(e=>e.outcome.result>0).length;
+  const avg = closed.length ? closed.reduce((a,e)=>a+e.outcome.result,0)/closed.length : null;
+  const byConv = [1,2,3,4,5].map(c=>{
+    const set = closed.filter(e=>e.conviction===c);
+    return {c, n:set.length, avg: set.length ? set.reduce((a,e)=>a+e.outcome.result,0)/set.length : null};
+  }).filter(x=>x.n);
+
+  const tagStats = {};
+  closed.forEach(e=>(e.tags||[]).forEach(t=>{
+    tagStats[t] = tagStats[t] || {n:0,sum:0};
+    tagStats[t].n++; tagStats[t].sum += e.outcome.result;
+  }));
+  const tags = Object.entries(tagStats).map(([t,v])=>({t,n:v.n,avg:v.sum/v.n})).sort((a,b)=>b.avg-a.avg);
+
+  return `
+  <div class="section">
+    <div class="section-head"><h2>Journal</h2><span class="sub">${S.journal.length} ${S.journal.length===1?"entry":"entries"}</span>
+      <div class="right"><button class="btn primary sm" id="jAdd">New entry</button></div></div>
+    ${closed.length ? `<div class="stats">
+      <div class="stat"><div class="k">Closed calls</div><div class="v">${closed.length}</div><div class="d">${S.journal.length-closed.length} still open</div></div>
+      <div class="stat"><div class="k">Right</div><div class="v">${(wins/closed.length*100).toFixed(0)}%</div><div class="d">${wins} of ${closed.length}</div></div>
+      <div class="stat"><div class="k">Average outcome</div><div class="v ${dirClass(avg)}">${pct(avg,1)}</div><div class="d">across closed calls</div></div>
+    </div>` : ""}
+  </div>
+
+  ${byConv.length ? `<div class="section">
+    <div class="section-head"><h2>Does your confidence mean anything?</h2><span class="sub">average outcome by how sure you were</span></div>
+    ${card(byConv.map(x=>`<div class="bar-row">
+      <div class="lbl">${x.c} of 5</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${clamp(Math.abs(x.avg)*2,3,100).toFixed(0)}%;${x.avg<0?"background:linear-gradient(90deg,rgba(217,122,108,.5),var(--down))":""}"></div></div>
+      <div class="val ${dirClass(x.avg)}">${pct(x.avg,1)}</div>
+    </div>`).join("") + `<p class="note" style="margin-top:10px">If the bars do not rise with confidence, your certainty is not carrying information. That is worth knowing.</p>`)}
+  </div>` : ""}
+
+  ${tags.length ? `<div class="section">
+    <div class="section-head"><h2>By reason</h2><span class="sub">which kinds of idea have worked</span></div>
+    ${card(tags.map(x=>`<div class="bar-row">
+      <div class="lbl" style="width:110px">${esc(x.t)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${clamp(Math.abs(x.avg)*2,3,100).toFixed(0)}%;${x.avg<0?"background:linear-gradient(90deg,rgba(217,122,108,.5),var(--down))":""}"></div></div>
+      <div class="val ${dirClass(x.avg)}">${pct(x.avg,1)}</div>
+    </div>`).join(""))}
+  </div>` : ""}
+
+  <div class="section">
+    <div class="section-head">
+      <div class="right" style="margin-left:0;width:100%;gap:8px">
+        <input type="text" id="jq" placeholder="Search entries" value="${esc(jFilter.q)}" style="max-width:260px" />
+        <select id="jst" style="width:auto">
+          <option value="all"${jFilter.status==="all"?" selected":""}>All</option>
+          <option value="open"${jFilter.status==="open"?" selected":""}>Still open</option>
+          <option value="closed"${jFilter.status==="closed"?" selected":""}>Closed</option>
+        </select>
+      </div>
+    </div>
+    ${entries.length ? entries.map(jEntryHTML).join("") : `<div class="card pad"><div class="empty"><p>No entries match that.</p></div></div>`}
+  </div>`;
+};
+
+function jEntryHTML(e){
+  const conv = `<span class="conv">${[1,2,3,4,5].map(i=>`<i class="${i<=e.conviction?"on":""}"></i>`).join("")}</span>`;
+  return `<div class="j-entry">
+    <div class="jh">
+      <button class="sym" data-jsym="${esc(e.sym)}" style="font-size:15px">${esc(e.sym)}</button>
+      <span class="pill flat">${esc(e.action||"note")}</span>
+      <span class="note">${niceDate(e.date)}</span>
+      ${conv}
+      ${e.outcome ? `<span class="pill ${dirClass(e.outcome.result)}">closed ${pct(e.outcome.result,1)}</span>` : `<span class="pill flat">open</span>`}
+      <span style="margin-left:auto;display:flex;gap:4px">
+        ${!e.outcome ? `<button class="btn ghost sm" data-jclose="${esc(e.id)}">Close out</button>` : ""}
+        <button class="btn ghost sm" data-jedit="${esc(e.id)}">Edit</button>
+        <button class="btn ghost sm" data-jdel="${esc(e.id)}">✕</button>
+      </span>
+    </div>
+    ${(e.tags||[]).length ? `<div style="margin-top:8px">${e.tags.map(t=>`<span class="tagchip">${esc(t)}</span>`).join("")}</div>` : ""}
+    ${e.thesis ? `<div class="jb">${esc(e.thesis)}</div>` : ""}
+    ${e.risks ? `<div class="jb" style="color:var(--text-3)"><strong style="color:var(--sand-3)">What would prove me wrong:</strong> ${esc(e.risks)}</div>` : ""}
+    ${e.outcome?.lessons ? `<div class="jb" style="border-top:1px solid var(--line);margin-top:11px;padding-top:11px"><strong style="color:var(--sand-2)">Looking back (${niceDate(e.outcome.date)}):</strong> ${esc(e.outcome.lessons)}</div>` : ""}
+  </div>`;
+}
+
+RENDERERS.journalAfter = function(){
+  const a = $("#jAdd"); if(a) a.onclick = ()=>journalModal();
+  const q = $("#jq");
+  if(q) q.oninput = ()=>{ jFilter.q = q.value; const pos = q.selectionStart; render(); const nq = $("#jq"); if(nq){ nq.focus(); nq.setSelectionRange(pos,pos); } };
+  const st = $("#jst"); if(st) st.onchange = ()=>{ jFilter.status = st.value; render(); };
+  $$("[data-jsym]").forEach(b=>b.onclick = ()=>openSymbol(b.dataset.jsym));
+  $$("[data-jedit]").forEach(b=>b.onclick = ()=>journalModal(b.dataset.jedit));
+  $$("[data-jclose]").forEach(b=>b.onclick = ()=>closeOutModal(b.dataset.jclose));
+  $$("[data-jdel]").forEach(b=>b.onclick = ()=>confirmDo("Delete this entry?", ()=>{
+    S.journal = S.journal.filter(x=>x.id!==b.dataset.jdel); save(); render(); toast("Entry deleted");
+  }));
+};
+
+const TAG_SUGGEST = ["undervalued","growth","turnaround","moat","dividend","momentum","macro","tip","gut feel","averaging down"];
+
+function journalModal(id=null, presetSym=""){
+  const e = id ? S.journal.find(x=>x.id===id) : null;
+  modal(e?"Edit entry":"New journal entry", `
+    <div class="row c3">
+      <label class="fld"><span>Ticker</span><input type="text" id="jSym" value="${esc(e?e.sym:presetSym)}" placeholder="AAPL" /></label>
+      <label class="fld"><span>What did you do</span><select id="jAct">
+        ${["buy","sell","hold","watch","note"].map(a=>`<option value="${a}"${e&&e.action===a?" selected":""}>${a}</option>`).join("")}
+      </select></label>
+      <label class="fld"><span>Date</span><input type="date" id="jDate" value="${esc(e?e.date:todayISO())}" /></label>
+    </div>
+    <label class="fld"><span>Why. Write it as if explaining to someone who disagrees.</span>
+      <textarea id="jThesis" placeholder="What do you think is true that the price does not reflect?">${esc(e?e.thesis||"":"")}</textarea></label>
+    <label class="fld"><span>What would prove you wrong</span>
+      <textarea id="jRisks" style="min-height:56px" placeholder="Name the thing that, if it happened, would mean you were mistaken rather than early.">${esc(e?e.risks||"":"")}</textarea></label>
+    <div class="row c2">
+      <label class="fld"><span>How sure are you</span>
+        <select id="jConv">${[1,2,3,4,5].map(i=>`<option value="${i}"${(e?e.conviction:3)===i?" selected":""}>${i} of 5</option>`).join("")}</select></label>
+      <label class="fld"><span>Tags, comma separated</span>
+        <input type="text" id="jTags" value="${esc((e?.tags||[]).join(", "))}" placeholder="undervalued, moat" /></label>
+    </div>
+    <div style="margin-top:-4px">${TAG_SUGGEST.map(t=>`<button class="tagchip" data-tag="${t}">${t}</button>`).join("")}</div>
+  `, `<button class="btn ghost" data-close>Cancel</button><button class="btn primary" id="jSave">${e?"Save":"Add entry"}</button>`);
+
+  $$("[data-tag]").forEach(b=>b.onclick = ()=>{
+    const inp = $("#jTags");
+    const cur = inp.value.split(",").map(s=>s.trim()).filter(Boolean);
+    if(!cur.includes(b.dataset.tag)) cur.push(b.dataset.tag);
+    inp.value = cur.join(", ");
+  });
+
+  $("#jSave").onclick = ()=>{
+    const sym = $("#jSym").value.trim().toUpperCase();
+    const thesis = $("#jThesis").value.trim();
+    if(!sym){ toast("Which company is this about?", true); return; }
+    if(!thesis){ toast("The reasoning is the whole point. Write something.", true); return; }
+    const rec = {
+      id: e?e.id:uid(), sym,
+      action: $("#jAct").value,
+      date: $("#jDate").value || todayISO(),
+      thesis,
+      risks: $("#jRisks").value.trim(),
+      conviction: +$("#jConv").value,
+      tags: $("#jTags").value.split(",").map(s=>s.trim()).filter(Boolean),
+      outcome: e?e.outcome:null
+    };
+    if(e) S.journal = S.journal.map(x=>x.id===e.id?rec:x); else S.journal.push(rec);
+    save(); closeModal(); render(); toast(e?"Entry saved":"Entry added");
+  };
+}
+
+function closeOutModal(id){
+  const e = S.journal.find(x=>x.id===id);
+  if(!e) return;
+  modal("Close out "+e.sym, `
+    <p class="note" style="margin-bottom:14px">You wrote this on ${niceDate(e.date)} and rated your confidence ${e.conviction} of 5. Before you fill this in, read it back.</p>
+    <div class="warn" style="margin-bottom:14px">${esc(e.thesis)}</div>
+    <div class="row c2">
+      <label class="fld"><span>How it turned out, in percent</span><input type="number" id="cRes" step="any" placeholder="-12.5" /></label>
+      <label class="fld"><span>Date</span><input type="date" id="cDate" value="${todayISO()}" /></label>
+    </div>
+    <label class="fld"><span>What you actually learned</span>
+      <textarea id="cLess" placeholder="Were you right for the reason you gave, or right by accident? Those are different results."></textarea></label>
+  `, `<button class="btn ghost" data-close>Cancel</button><button class="btn primary" id="cSave">Close it out</button>`);
+
+  $("#cSave").onclick = ()=>{
+    const r = parseFloat($("#cRes").value);
+    if(!isFinite(r)){ toast("Enter the outcome as a percent", true); return; }
+    e.outcome = {result:r, date:$("#cDate").value||todayISO(), lessons:$("#cLess").value.trim()};
+    save(); closeModal(); render(); toast("Closed out");
+  };
+}
+
+/* ============================ settings ============================ */
+function settingsModal(){
+  modal("Settings", `
+    <div class="section-head"><h2>Data keys</h2></div>
+    <label class="fld"><span>Finnhub key — quotes, company numbers, news, search</span>
+      <input type="password" id="kFh" value="${esc(S.keys.finnhub)}" placeholder="paste your free key" autocomplete="off" /></label>
+    <p class="note" style="margin:-6px 0 14px">Free at <a href="https://finnhub.io/register" target="_blank" rel="noopener">finnhub.io</a>. Sixty calls a minute, no card.</p>
+
+    <label class="fld"><span>Twelve Data key — daily price history for the charts</span>
+      <input type="password" id="kTd" value="${esc(S.keys.twelve)}" placeholder="paste your free key" autocomplete="off" /></label>
+    <p class="note" style="margin:-6px 0 18px">Free at <a href="https://twelvedata.com/pricing" target="_blank" rel="noopener">twelvedata.com</a>. Eight calls a minute, eight hundred a day. Bellwether caches each chart for a day so you rarely hit it.</p>
+
+    <div class="warn" style="margin-bottom:18px">Both keys live in this browser and are sent only to the provider they belong to. Anyone with access to this device can read them, so use keys you would not mind rotating.</div>
+
+    <div class="section-head"><h2>Display</h2></div>
+    <label class="fld"><span>Currency symbol</span><input type="text" id="sCur" value="${esc(CUR())}" maxlength="3" style="max-width:100px" /></label>
+    <p class="note" style="margin:-6px 0 18px">Cosmetic only. Bellwether does not convert between currencies, so mixing markets in one portfolio will mix their money too.</p>
+
+    <div class="section-head"><h2>Your data</h2></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn sm" id="bExport">Export a backup</button>
+      <button class="btn sm" id="bImport">Restore from a backup</button>
+      <button class="btn sm" id="bCache">Clear cached prices</button>
+      <button class="btn danger sm" id="bWipe">Erase everything</button>
+    </div>
+    <p class="note" style="margin-top:10px">A backup is a single file holding your watchlist, holdings, journal and keys. Keep one, because clearing this browser clears the app.</p>
+    <input type="file" id="fileIn" accept="application/json" style="display:none" />
+  `, `<button class="btn ghost" data-close>Close</button><button class="btn primary" id="setSave">Save</button>`);
+
+  $("#setSave").onclick = ()=>{
+    S.keys.finnhub = $("#kFh").value.trim();
+    S.keys.twelve = $("#kTd").value.trim();
+    S.settings.currency = $("#sCur").value.trim() || "$";
+    save(); closeModal(); render(); toast("Saved");
+  };
+  $("#bExport").onclick = ()=>{
+    const blob = new Blob([JSON.stringify(S,null,2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "bellwether-backup-"+todayISO()+".json";
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+    toast("Backup downloaded");
+  };
+  $("#bImport").onclick = ()=>$("#fileIn").click();
+  $("#fileIn").onchange = ev=>{
+    const f = ev.target.files[0];
+    if(!f) return;
+    const r = new FileReader();
+    r.onload = ()=>{
+      try{
+        const p = JSON.parse(r.result);
+        if(!p || typeof p !== "object" || !("watch" in p)) throw new Error("bad file");
+        confirmDo("Restoring replaces everything currently in the app.", ()=>{
+          S = Object.assign(structuredClone(DEFAULT_STATE), p);
+          save(); closeModal(); render(); toast("Backup restored");
+        }, "Restore");
+      }catch(e){ toast("That does not look like a Bellwether backup.", true); }
+    };
+    r.readAsText(f);
+  };
+  $("#bCache").onclick = ()=>{
+    C = {quotes:{},profiles:{},metrics:{},news:{},series:{}};
+    saveCache(); render(); toast("Cache cleared");
+  };
+  $("#bWipe").onclick = ()=>confirmDo("This erases your watchlist, holdings, journal and keys from this browser. It cannot be undone.", ()=>{
+    localStorage.removeItem(SKEY); localStorage.removeItem(CKEY);
+    S = structuredClone(DEFAULT_STATE);
+    C = {quotes:{},profiles:{},metrics:{},news:{},series:{}};
+    closeModal(); render(); toast("Everything erased");
+  }, "Erase");
+}
+window.settingsModal = settingsModal;
+
+/* ============================ boot ============================ */
+$("#btnSettings").onclick = settingsModal;
+$("#btnRefresh").onclick = ()=>refreshAll(true);
+
+render();
+
+if(S.keys.finnhub && S.settings.autoRefresh){
+  const syms = new Set([...S.watch.map(w=>w.sym), ...S.lots.map(l=>l.sym)]);
+  if(syms.size && Date.now()-S.lastSync > FRESH_QUOTE) setTimeout(()=>refreshAll(false), 600);
+}
+setInterval(()=>{ const el = $("#lastSync"); if(el && S.lastSync) el.textContent = "synced "+ago(S.lastSync); }, 30000);
+
+let rsz;
+window.addEventListener("resize", ()=>{
+  clearTimeout(rsz);
+  rsz = setTimeout(()=>{ if(repaintChart) repaintChart(); }, 200);
+});
+
+/* Service worker: http(s) only, so the offline file:// copy stays plain. */
+if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("./sw.js").catch(function(){});
+  });
+}
+</script>
+</body>
+</html>
