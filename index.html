@@ -83,6 +83,7 @@ header.top{
 }
 .icon-btn:hover{color:var(--sand);border-color:var(--line-2);background:var(--glass-3)}
 .icon-btn svg{width:17px;height:17px}
+.icon-btn.signed{color:var(--sand);border-color:var(--line-2);background:rgba(216,201,163,.09)}
 .stale{font-size:11.5px;color:var(--text-3);font-family:var(--mono);white-space:nowrap}
 
 /* ---------- tabs ---------- */
@@ -310,6 +311,9 @@ footer.foot{text-align:center;padding:36px 16px 20px;color:var(--text-3);font-si
       <button class="icon-btn" id="btnRefresh" title="Refresh quotes" aria-label="Refresh quotes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
       </button>
+      <button class="icon-btn" id="btnAccount" title="Sign in to sync" aria-label="Account" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </button>
       <button class="icon-btn" id="btnSettings" title="Settings" aria-label="Settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8.9 19a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 5 8.9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9.5a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9v.1a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
       </button>
@@ -403,6 +407,8 @@ const DEFAULT_STATE = {
   lots:[],
   journal:[],
   screens:[],
+  tombs:[],
+  sync:{ lastPull:0, lastAt:0 },
   lastSync:0
 };
 
@@ -416,7 +422,9 @@ function load(){
     const p = JSON.parse(raw);
     return Object.assign(structuredClone(DEFAULT_STATE), p, {
       keys: Object.assign({}, DEFAULT_STATE.keys, p.keys||{}),
-      settings: Object.assign({}, DEFAULT_STATE.settings, p.settings||{})
+      settings: Object.assign({}, DEFAULT_STATE.settings, p.settings||{}),
+      sync: Object.assign({}, DEFAULT_STATE.sync, p.sync||{}),
+      tombs: p.tombs || []
     });
   }catch(e){ return structuredClone(DEFAULT_STATE); }
 }
@@ -814,7 +822,7 @@ RENDERERS.watchAfter = function(){
   $$("[data-del]").forEach(b=>b.onclick = e=>{
     e.stopPropagation();
     const sym = b.dataset.del;
-    S.watch = S.watch.filter(w=>w.sym!==sym); save(); render();
+    delWatch(sym); render();
     toast(sym+" removed");
   });
   $$("tr[data-sym]").forEach(tr=>tr.onclick = ()=>openSymbol(tr.dataset.sym));
@@ -862,9 +870,8 @@ function addTickerModal(){
   async function doAdd(sym){
     sym = (sym||"").toUpperCase().trim();
     if(!sym) return;
-    if(S.watch.some(w=>w.sym===sym)){ toast(sym+" is already on the list"); closeModal(); return; }
-    S.watch.push({sym, note:"", added:Date.now()});
-    save(); closeModal(); render();
+    if(!addWatch(sym)){ toast(sym+" is already on the list"); closeModal(); return; }
+    closeModal(); render();
     toast(sym+" added");
     try{ await hydrate(sym); render(); }catch(e){ toast(e.message, true); }
   }
@@ -976,8 +983,7 @@ async function openSymbol(sym){
   `;
 
   $("#dWatch").onclick = ()=>{
-    if(S.watch.some(w=>w.sym===sym)){ toast("Already on the watchlist"); return; }
-    S.watch.push({sym, note:"", added:Date.now()}); save();
+    if(!addWatch(sym)){ toast("Already on the watchlist"); return; }
     $("#dWatch").textContent = "On watchlist";
     toast(sym+" added"); if(TAB==="watch") setTimeout(render,50);
   };
@@ -1128,7 +1134,7 @@ RENDERERS.portAfter = function(){
     e.stopPropagation();
     const id = b.dataset.delLot;
     confirmDo("This removes the lot and its sale history for good.", ()=>{
-      S.lots = S.lots.filter(l=>l.id!==id); save(); render(); toast("Lot deleted");
+      delLot(id); render(); toast("Lot deleted");
     });
   });
   $$("tr[data-sym]").forEach(tr=>tr.onclick = ()=>openSymbol(tr.dataset.sym));
@@ -1158,7 +1164,7 @@ function lotModal(id=null, presetSym=""){
   upd();
 
   if(l) $("#lDel").onclick = ()=>confirmDo("Delete this lot and any sales recorded against it?", ()=>{
-    S.lots = S.lots.filter(x=>x.id!==id); save(); closeModal(); render(); toast("Lot deleted");
+    delLot(id); closeModal(); render(); toast("Lot deleted");
   });
 
   $("#lSave").onclick = async ()=>{
@@ -1175,8 +1181,8 @@ function lotModal(id=null, presetSym=""){
       note: $("#lNote").value.trim(),
       sells: l?l.sells||[]:[]
     };
-    if(l) S.lots = S.lots.map(x=>x.id===l.id?rec:x); else S.lots.push(rec);
-    save(); closeModal(); render();
+    putLot(rec);
+    closeModal(); render();
     toast(l?"Lot updated":sym+" added to the portfolio");
     if(!C.quotes[sym]){ try{ await hydrate(sym); render(); }catch(e){} }
   };
@@ -1215,7 +1221,7 @@ function sellModal(id){
     if(!(pr>=0)){ toast("Enter the sale price", true); return; }
     l.sells = l.sells || [];
     l.sells.push({id:uid(), shares:sh, price:pr, fees:parseFloat($("#sFees").value)||0, date:$("#sDate").value||todayISO()});
-    save(); closeModal(); render(); toast("Sale recorded");
+    putLot(l); closeModal(); render(); toast("Sale recorded");
   };
 }
 
@@ -1345,8 +1351,8 @@ RENDERERS.screenAfter = function(){
   $$("[data-add]").forEach(b=>b.onclick = e=>{
     e.stopPropagation();
     const sym = b.dataset.add;
-    if(S.watch.some(w=>w.sym===sym)){ toast("Already watching "+sym); return; }
-    S.watch.push({sym, note:"", added:Date.now()}); save(); toast(sym+" added to the watchlist");
+    if(!addWatch(sym)){ toast("Already watching "+sym); return; }
+    toast(sym+" added to the watchlist");
     b.textContent = "Watching"; b.disabled = true;
   });
   $$("tr[data-sym]").forEach(tr=>tr.onclick = ()=>openSymbol(tr.dataset.sym));
@@ -1516,7 +1522,7 @@ RENDERERS.journalAfter = function(){
   $$("[data-jedit]").forEach(b=>b.onclick = ()=>journalModal(b.dataset.jedit));
   $$("[data-jclose]").forEach(b=>b.onclick = ()=>closeOutModal(b.dataset.jclose));
   $$("[data-jdel]").forEach(b=>b.onclick = ()=>confirmDo("Delete this entry?", ()=>{
-    S.journal = S.journal.filter(x=>x.id!==b.dataset.jdel); save(); render(); toast("Entry deleted");
+    delJournal(b.dataset.jdel); render(); toast("Entry deleted");
   }));
 };
 
@@ -1567,8 +1573,8 @@ function journalModal(id=null, presetSym=""){
       tags: $("#jTags").value.split(",").map(s=>s.trim()).filter(Boolean),
       outcome: e?e.outcome:null
     };
-    if(e) S.journal = S.journal.map(x=>x.id===e.id?rec:x); else S.journal.push(rec);
-    save(); closeModal(); render(); toast(e?"Entry saved":"Entry added");
+    putJournal(rec);
+    closeModal(); render(); toast(e?"Entry saved":"Entry added");
   };
 }
 
@@ -1590,7 +1596,7 @@ function closeOutModal(id){
     const r = parseFloat($("#cRes").value);
     if(!isFinite(r)){ toast("Enter the outcome as a percent", true); return; }
     e.outcome = {result:r, date:$("#cDate").value||todayISO(), lessons:$("#cLess").value.trim()};
-    save(); closeModal(); render(); toast("Closed out");
+    putJournal(e); closeModal(); render(); toast("Closed out");
   };
 }
 
@@ -1626,8 +1632,12 @@ function settingsModal(){
   $("#setSave").onclick = ()=>{
     S.keys.finnhub = $("#kFh").value.trim();
     S.keys.twelve = $("#kTd").value.trim();
-    S.settings.currency = $("#sCur").value.trim() || "$";
-    save(); closeModal(); render(); toast("Saved");
+    const cur = $("#sCur").value.trim() || "$";
+    const curChanged = cur !== CUR();
+    S.settings.currency = cur;
+    save();
+    if(curChanged) touchPrefs();
+    closeModal(); render(); toast("Saved");
   };
   $("#bExport").onclick = ()=>{
     const blob = new Blob([JSON.stringify(S,null,2)], {type:"application/json"});
@@ -1649,7 +1659,14 @@ function settingsModal(){
         if(!p || typeof p !== "object" || !("watch" in p)) throw new Error("bad file");
         confirmDo("Restoring replaces everything currently in the app.", ()=>{
           S = Object.assign(structuredClone(DEFAULT_STATE), p);
-          save(); closeModal(); render(); toast("Backup restored");
+          /* A restored backup is the new truth: re-stamp every row and force a
+             full re-pull, so the account ends up matching this file rather than
+             silently winning on older timestamps. */
+          S.sync = {lastPull:0, lastAt:0};
+          ["watch","lots","journal"].forEach(n=>S[n].forEach(r=>touch(r)));
+          S.settings._d = 1; S.settings.updatedAt = Date.now();
+          save(); queuePush();
+          closeModal(); render(); toast("Backup restored");
         }, "Restore");
       }catch(e){ toast("That does not look like a Bellwether backup.", true); }
     };
@@ -1659,8 +1676,11 @@ function settingsModal(){
     C = {quotes:{},profiles:{},metrics:{},news:{},series:{}};
     saveCache(); render(); toast("Cache cleared");
   };
-  $("#bWipe").onclick = ()=>confirmDo("This erases your watchlist, holdings, journal and keys from this browser. It cannot be undone.", ()=>{
+  $("#bWipe").onclick = ()=>confirmDo(
+    (SESSION ? "This erases everything on this device and signs you out, so nothing syncs back down. Your account keeps its own copy until you delete it there. "
+             : "This erases your watchlist, holdings, journal and keys from this browser. ") + "It cannot be undone.", ()=>{
     localStorage.removeItem(SKEY); localStorage.removeItem(CKEY);
+    if(SESSION) setSession(null);
     S = structuredClone(DEFAULT_STATE);
     C = {quotes:{},profiles:{},metrics:{},news:{},series:{}};
     closeModal(); render(); toast("Everything erased");
@@ -1668,11 +1688,348 @@ function settingsModal(){
 }
 window.settingsModal = settingsModal;
 
+/* ============================ supabase sync ============================ */
+/* Optional. The app is local first: signed out, or offline, nothing below
+   runs and every feature still works. Signing in adds cross-device sync.
+
+   No SDK — Supabase's auth and REST endpoints are plain HTTP, and a CDN
+   dependency would break the offline file:// copy this app is built around.
+
+   Fill these in from your project's Settings -> API page. The anon key is
+   meant to be public: row-level security is what protects the data. */
+const SUPA = {
+  url:  "",   // https://YOUR-PROJECT.supabase.co
+  anon: ""    // the anon / publishable key
+};
+const SUPA_ON = () => !!(SUPA.url && SUPA.anon);
+const SESSKEY = "bellwether.session";
+
+let SESSION = null;
+try{ SESSION = JSON.parse(localStorage.getItem(SESSKEY) || "null"); }catch(e){}
+
+function setSession(s){
+  SESSION = s;
+  try{
+    if(s) localStorage.setItem(SESSKEY, JSON.stringify(s));
+    else localStorage.removeItem(SESSKEY);
+  }catch(e){}
+  paintAccount();
+}
+
+async function authCall(path, body, useToken=false){
+  const h = {"apikey":SUPA.anon, "Content-Type":"application/json"};
+  if(useToken && SESSION) h["Authorization"] = "Bearer "+SESSION.access_token;
+  const r = await fetch(SUPA.url+"/auth/v1"+path, {method:"POST", headers:h, body:JSON.stringify(body||{})});
+  const j = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(j.error_description || j.msg || j.message || ("Sign in failed ("+r.status+")"));
+  return j;
+}
+function storeAuth(j){
+  if(!j.access_token) return null;
+  const s = {
+    access_token: j.access_token,
+    refresh_token: j.refresh_token,
+    expires_at: Date.now() + (j.expires_in || 3600)*1000,
+    user: {id: j.user?.id, email: j.user?.email}
+  };
+  setSession(s);
+  return s;
+}
+async function freshToken(){
+  if(!SESSION) throw new Error("Not signed in.");
+  if(Date.now() < SESSION.expires_at - 60000) return SESSION.access_token;
+  const j = await authCall("/token?grant_type=refresh_token", {refresh_token:SESSION.refresh_token});
+  const s = storeAuth(j);
+  if(!s) throw new Error("Session expired. Sign in again.");
+  return s.access_token;
+}
+
+async function rest(table, {method="GET", query="", body=null, upsert=false}={}){
+  const token = await freshToken();
+  const h = {"apikey":SUPA.anon, "Authorization":"Bearer "+token, "Content-Type":"application/json"};
+  if(upsert) h["Prefer"] = "resolution=merge-duplicates,return=minimal";
+  const r = await fetch(SUPA.url+"/rest/v1/"+table+query, {method, headers:h, body: body?JSON.stringify(body):undefined});
+  if(!r.ok){
+    const t = await r.text().catch(()=>"");
+    if(r.status===404 || /relation .* does not exist/.test(t))
+      throw new Error("The Bellwether tables are missing. Run schema.sql in your Supabase project.");
+    throw new Error("Sync failed ("+r.status+"). "+t.slice(0,140));
+  }
+  return method==="GET" ? r.json() : null;
+}
+
+/* ---- local record bookkeeping ---- */
+const touch = r => { r.updatedAt = Date.now(); r._d = 1; return r; };
+function tomb(t, row){
+  S.tombs = S.tombs || [];
+  S.tombs.push({t, row: Object.assign({}, row, {updatedAt: Date.now()})});
+}
+
+/* ---- mutations: every change to synced data goes through these ---- */
+function addWatch(sym, note=""){
+  if(S.watch.some(w=>w.sym===sym)) return false;
+  S.watch.push(touch({sym, note, added:Date.now()}));
+  save(); queuePush(); return true;
+}
+function delWatch(sym){
+  const w = S.watch.find(x=>x.sym===sym);
+  if(w) tomb("watch", w);
+  S.watch = S.watch.filter(x=>x.sym!==sym);
+  save(); queuePush();
+}
+function putLot(rec){
+  touch(rec);
+  const i = S.lots.findIndex(x=>x.id===rec.id);
+  if(i>=0) S.lots[i] = rec; else S.lots.push(rec);
+  save(); queuePush();
+}
+function delLot(id){
+  const l = S.lots.find(x=>x.id===id);
+  if(l) tomb("lots", l);
+  S.lots = S.lots.filter(x=>x.id!==id);
+  save(); queuePush();
+}
+function putJournal(rec){
+  touch(rec);
+  const i = S.journal.findIndex(x=>x.id===rec.id);
+  if(i>=0) S.journal[i] = rec; else S.journal.push(rec);
+  save(); queuePush();
+}
+function delJournal(id){
+  const j = S.journal.find(x=>x.id===id);
+  if(j) tomb("journal", j);
+  S.journal = S.journal.filter(x=>x.id!==id);
+  save(); queuePush();
+}
+function touchPrefs(){ S.settings.updatedAt = Date.now(); S.settings._d = 1; save(); queuePush(); }
+
+/* ---- shape translation ---- */
+const iso = ms => new Date(ms || Date.now()).toISOString();
+const ms  = s  => s ? new Date(s).getTime() : 0;
+const uidOf = () => SESSION.user.id;
+
+const MAP = {
+  watch: {
+    table: "bw_watchlist",
+    key: r => r.sym,
+    out: r => ({user_id:uidOf(), id:r.sym, sym:r.sym, note:r.note||"", added_at:iso(r.added),
+                updated_at:iso(r.updatedAt), deleted_at:null}),
+    in:  r => ({sym:r.sym||r.id, note:r.note||"", added:ms(r.added_at), updatedAt:ms(r.updated_at)})
+  },
+  lots: {
+    table: "bw_lots",
+    key: r => r.id,
+    out: r => ({user_id:uidOf(), id:r.id, sym:r.sym, shares:r.shares, price:r.price, fees:r.fees||0,
+                bought_on:r.date||null, note:r.note||"", sells:r.sells||[],
+                updated_at:iso(r.updatedAt), deleted_at:null}),
+    in:  r => ({id:r.id, sym:r.sym, shares:+r.shares, price:+r.price, fees:+r.fees||0,
+                date:r.bought_on||"", note:r.note||"", sells:r.sells||[], updatedAt:ms(r.updated_at)})
+  },
+  journal: {
+    table: "bw_journal",
+    key: r => r.id,
+    out: r => ({user_id:uidOf(), id:r.id, sym:r.sym, action:r.action||"note", entry_date:r.date||null,
+                thesis:r.thesis||"", risks:r.risks||"", conviction:r.conviction||null,
+                tags:r.tags||[], outcome:r.outcome||null,
+                updated_at:iso(r.updatedAt), deleted_at:null}),
+    in:  r => ({id:r.id, sym:r.sym, action:r.action, date:r.entry_date||"", thesis:r.thesis||"",
+                risks:r.risks||"", conviction:r.conviction, tags:r.tags||[], outcome:r.outcome||null,
+                updatedAt:ms(r.updated_at)})
+  }
+};
+
+/* ---- the sync itself ---- */
+let syncing = false, pushTimer = null;
+
+function queuePush(){
+  if(!SESSION || !SUPA_ON()) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(()=>syncNow(false), 1500);
+}
+
+async function syncNow(loud=true){
+  if(!SESSION || !SUPA_ON() || syncing) return;
+  if(!navigator.onLine){ if(loud) toast("Offline. Your changes are saved here and will sync later."); return; }
+  syncing = true; paintAccount();
+  try{
+    await pull();
+    await push();
+    S.sync.lastAt = Date.now();
+    save();
+    if(loud) toast("Synced");
+    render();
+  }catch(e){
+    if(loud || /tables are missing|Sign in again/.test(e.message)) toast(e.message, true);
+  }finally{
+    syncing = false; paintAccount();
+  }
+}
+
+async function pull(){
+  const since = S.sync.lastPull ? "&updated_at=gt."+encodeURIComponent(iso(S.sync.lastPull)) : "";
+  let newest = S.sync.lastPull || 0;
+
+  for(const name of ["watch","lots","journal"]){
+    const m = MAP[name];
+    const rows = await rest(m.table, {query:"?select=*"+since});
+    for(const row of rows){
+      newest = Math.max(newest, ms(row.updated_at));
+      const arr = S[name];
+      const i = arr.findIndex(x=>m.key(x) === (name==="watch" ? (row.sym||row.id) : row.id));
+      if(row.deleted_at){
+        if(i>=0) arr.splice(i,1);
+        continue;
+      }
+      const incoming = m.in(row);
+      if(i<0) arr.push(incoming);
+      else if(incoming.updatedAt >= (arr[i].updatedAt||0)) arr[i] = incoming;
+    }
+  }
+
+  const prefs = await rest("bw_prefs", {query:"?select=*"+since});
+  if(prefs.length){
+    const p = prefs[0];
+    newest = Math.max(newest, ms(p.updated_at));
+    if(ms(p.updated_at) >= (S.settings.updatedAt||0)){
+      S.settings.currency = p.currency || "$";
+      S.settings.updatedAt = ms(p.updated_at);
+      S.settings._d = 0;
+    }
+  }
+
+  /* A second of slack: rows written while this pull was in flight would
+     otherwise fall in the gap between lastPull and the next request. */
+  S.sync.lastPull = Math.max(newest, S.sync.lastPull||0) - 1000;
+  save();
+}
+
+async function push(){
+  for(const name of ["watch","lots","journal"]){
+    const m = MAP[name];
+    const dirty = S[name].filter(r=>r._d);
+    if(dirty.length){
+      dirty.forEach(r=>{ if(!r.updatedAt) r.updatedAt = Date.now(); });
+      await rest(m.table, {method:"POST", query:"?on_conflict=user_id,id", upsert:true, body:dirty.map(m.out)});
+      dirty.forEach(r=>{ delete r._d; });
+    }
+  }
+
+  const tombs = S.tombs || [];
+  if(tombs.length){
+    for(const name of ["watch","lots","journal"]){
+      const m = MAP[name];
+      const mine = tombs.filter(t=>t.t===name);
+      if(!mine.length) continue;
+      const rows = mine.map(t=>Object.assign(m.out(t.row), {deleted_at: iso(t.row.updatedAt)}));
+      await rest(m.table, {method:"POST", query:"?on_conflict=user_id,id", upsert:true, body:rows});
+    }
+    S.tombs = [];
+  }
+
+  if(S.settings._d){
+    await rest("bw_prefs", {method:"POST", query:"?on_conflict=user_id,id", upsert:true,
+      body:[{user_id:uidOf(), id:"prefs", currency:CUR(), updated_at:iso(S.settings.updatedAt), deleted_at:null}]});
+    S.settings._d = 0;
+  }
+  save();
+}
+
+/* ---- account UI ---- */
+function paintAccount(){
+  const b = $("#btnAccount");
+  if(!b) return;
+  b.style.display = SUPA_ON() ? "" : "none";
+  b.classList.toggle("signed", !!SESSION);
+  b.style.opacity = syncing ? ".45" : "";
+  b.title = SESSION ? ("Signed in as "+SESSION.user.email) : "Sign in to sync";
+}
+
+function accountModal(){
+  if(SESSION){
+    modal("Your account", `
+      <p class="note" style="font-size:14px;color:var(--text-2)">Signed in as <strong style="color:var(--sand)">${esc(SESSION.user.email)}</strong>.</p>
+      <p class="note" style="margin-top:8px">${S.sync.lastAt ? "Last synced "+ago(S.sync.lastAt)+"." : "Not synced yet."} Your watchlist, holdings and journal follow you to any device you sign in on.</p>
+      <div class="warn" style="margin-top:14px">Your Finnhub and Twelve Data keys are deliberately <strong>not</strong> synced. They stay in whichever browser you typed them into, so you enter them once per device.</div>
+      <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+        <button class="btn sm" id="aSync">Sync now</button>
+        <button class="btn sm" id="aOut">Sign out</button>
+      </div>
+    `, `<button class="btn ghost" data-close>Close</button>`);
+    $("#aSync").onclick = ()=>{ closeModal(); syncNow(true); };
+    $("#aOut").onclick = ()=>confirmDo("Signing out leaves your data on this device untouched and stops syncing.", async ()=>{
+      try{ await authCall("/logout", {}, true); }catch(e){}
+      setSession(null); closeModal(); render(); toast("Signed out");
+    }, "Sign out");
+    return;
+  }
+
+  modal("Sign in to sync", `
+    <p class="note" style="margin-bottom:14px">Optional. Bellwether works fully signed out — this just carries your watchlist, holdings and journal between devices.</p>
+    <label class="fld"><span>Email</span><input type="text" id="auEmail" autocomplete="username" placeholder="you@example.com" /></label>
+    <label class="fld"><span>Password</span><input type="password" id="auPass" autocomplete="current-password" placeholder="at least six characters" /></label>
+    <p class="note" id="auMsg" style="min-height:20px"></p>
+    <p class="note" style="margin-top:6px"><button class="btn ghost sm" id="auForgot" style="padding:0">Forgot your password?</button></p>
+  `, `<button class="btn ghost" id="auUp">Create account</button><button class="btn primary" id="auIn">Sign in</button>`);
+
+  const msg = t => { $("#auMsg").textContent = t; };
+  const creds = ()=>({email:$("#auEmail").value.trim(), password:$("#auPass").value});
+
+  $("#auIn").onclick = async ()=>{
+    const c = creds();
+    if(!c.email || !c.password){ msg("Enter your email and password."); return; }
+    msg("Signing in…");
+    try{
+      storeAuth(await authCall("/token?grant_type=password", c));
+      closeModal(); toast("Signed in"); await firstSync();
+    }catch(e){ msg(e.message); }
+  };
+  $("#auUp").onclick = async ()=>{
+    const c = creds();
+    if(!c.email || c.password.length<6){ msg("Enter an email and a password of at least six characters."); return; }
+    msg("Creating your account…");
+    try{
+      const j = await authCall("/signup", c);
+      if(j.access_token){ storeAuth(j); closeModal(); toast("Account created"); await firstSync(); }
+      else msg("Check your email to confirm the account, then sign in.");
+    }catch(e){ msg(e.message); }
+  };
+  $("#auForgot").onclick = async ()=>{
+    const e0 = $("#auEmail").value.trim();
+    if(!e0){ msg("Enter your email first."); return; }
+    try{ await authCall("/recover", {email:e0}); msg("If that address has an account, a reset link is on its way."); }
+    catch(e){ msg(e.message); }
+  };
+}
+
+/* First sync after signing in on a device that may already hold local data.
+   Pull first so anything already in the account wins where it is newer, then
+   mark whatever is left as dirty so local-only rows are carried up rather
+   than quietly dropped. */
+async function firstSync(){
+  const hadLocal = S.watch.length || S.lots.length || S.journal.length;
+  syncing = true; paintAccount();
+  try{
+    await pull();
+    if(hadLocal){
+      ["watch","lots","journal"].forEach(n=>S[n].forEach(r=>{ if(!r.updatedAt){ r.updatedAt = Date.now(); r._d = 1; } }));
+    }
+    await push();
+    S.sync.lastAt = Date.now(); save();
+    toast("Synced");
+  }catch(e){ toast(e.message, true); }
+  finally{ syncing = false; paintAccount(); render(); }
+}
+
 /* ============================ boot ============================ */
 $("#btnSettings").onclick = settingsModal;
 $("#btnRefresh").onclick = ()=>refreshAll(true);
+$("#btnAccount").onclick = accountModal;
+paintAccount();
 
 render();
+
+if(SESSION && SUPA_ON()) setTimeout(()=>syncNow(false), 400);
+window.addEventListener("online", ()=>{ if(SESSION && SUPA_ON()) syncNow(false); });
 
 if(S.keys.finnhub && S.settings.autoRefresh){
   const syms = new Set([...S.watch.map(w=>w.sym), ...S.lots.map(l=>l.sym)]);

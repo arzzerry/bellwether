@@ -38,6 +38,29 @@ Finnhub and Twelve Data could be dropped.
 The service worker deliberately does **not** cache provider responses — only
 same-origin app files. Stale quotes are worse than no quotes.
 
+## Supabase sync (optional)
+Signed out, or with `SUPA` unfilled, none of this runs and every feature still
+works — the app is local first and stays that way.
+
+- `schema.sql` creates four tables, all prefixed `bw_` so they can share a
+  project with another app's tables. Run it once in the SQL Editor.
+- Every table is `primary key (user_id, id)` with row-level security, so the
+  public anon key in the page can only ever touch the signed-in user's rows.
+- **No Supabase SDK.** Auth and PostgREST are called with plain `fetch`, because
+  a CDN dependency would break the offline `file://` copy. Roughly 200 lines in
+  the "supabase sync" block of `index.html`.
+- Sync is last-write-wins per row on `updated_at`, with `deleted_at` tombstones
+  so a delete on one device does not get resurrected by another device's push.
+  Local rows carry `updatedAt` and a `_d` dirty flag; `S.tombs` holds pending
+  deletes until they are pushed.
+- **Every mutation must go through** `addWatch`, `delWatch`, `putLot`, `delLot`,
+  `putJournal`, `delJournal` or `touchPrefs`. Writing to `S.watch` / `S.lots` /
+  `S.journal` directly and calling `save()` will persist locally but never sync.
+- The **API keys are deliberately not synced**. They stay in the browser that
+  entered them, so each device is entered once.
+- To wire a project up, fill `SUPA.url` and `SUPA.anon` at the top of the
+  sync block from Settings -> API, then rebuild.
+
 ## Design
 Deep teal base (`#0a1414`) with a sand accent (`#d8c9a3`). Chosen because the
 user asked for colours entirely unlike his other four projects, so do not drift
