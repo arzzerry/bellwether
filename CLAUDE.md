@@ -135,6 +135,21 @@ Rules that keep a colourful theme from turning tacky:
 - **Sparklines keep the gain/loss colour.** They are far too small for a
   gradient to read as anything but mud.
 
+### Header controls
+Modelled on Terravine's `.act-btn`: 40px tall pills, 12px radius, an icon plus
+a short label, and a 1px lift on hover. Ironhaus uses the same 40px control
+height, so that number is the house standard — do not shrink it.
+
+Labels collapse below 980px and the controls become 40px squares; below 560px
+they shrink again and the sync stamp and brand tagline are dropped, because
+five controls plus the brand will not fit a phone otherwise. Check the header
+at phone width after adding any control — there is no room left.
+
+Two labels track state rather than being fixed: the theme button names the mode
+it would switch **to**, and the account button reads "Sign in" or "Account".
+Sign out is a separate header control that only exists while there is a session
+to end, and both it and the account panel call the same `signOut()`.
+
 ### Light and dark
 Both modes live in `:root` and `:root[data-theme="light"]`. Everything is a
 token; there are no bare colours left in the stylesheet, which is what makes
