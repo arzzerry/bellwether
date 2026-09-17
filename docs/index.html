@@ -6,7 +6,7 @@
 <title>Bellwether</title>
 <meta name="description" content="A private watchlist, portfolio tracker, screener and trade journal that keeps everything on your own machine." />
 <meta name="theme-color" content="#0a1414" />
-<meta name="bw-version" content="1.1" />
+<meta name="bw-version" content="1.2" />
 <style>
 :root{
   --ink:#0a1414;
@@ -1705,8 +1705,8 @@ window.settingsModal = settingsModal;
    Fill these in from your project's Settings -> API page. The anon key is
    meant to be public: row-level security is what protects the data. */
 const SUPA = {
-  url:  "",   // https://YOUR-PROJECT.supabase.co
-  anon: ""    // the anon / publishable key
+  url:  "https://obspeaaskedturlkdyym.supabase.co",
+  anon: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ic3BlYWFza2VkdHVybGtkeXltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2Mzc2MDcsImV4cCI6MjEwNTIxMzYwN30.3VPrgEqoCl64sO0Aw6NKIgPK1jKJGoJ7YlE1eEJolEM"
 };
 const SUPA_ON = () => !!(SUPA.url && SUPA.anon);
 const SESSKEY = "bellwether.session";
