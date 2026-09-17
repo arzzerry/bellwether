@@ -35,11 +35,17 @@
   /* Motion: short, small and consistent. Premium reads as things settling
      quickly, not as things sliding around. Everything animates transform and
      opacity only, so nothing triggers layout. */
-  --dur-fast:110ms;
-  --dur:180ms;
-  --dur-slow:300ms;
+  --dur-fast:130ms;
+  --dur:200ms;
+  --dur-slow:340ms;
   --ease:cubic-bezier(.4,0,.2,1);
   --ease-out:cubic-bezier(.22,1,.36,1);
+  /* The house easing: a long, soft settle. Content is staggered in on this
+     curve rather than a whole panel moving as one slab, which is what makes
+     the other apps feel unhurried. */
+  --ease-soft:cubic-bezier(.16,1,.3,1);
+  --ease-glide:cubic-bezier(.22,.61,.36,1);
+  --rise:600ms;
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --pad:18px;
@@ -74,12 +80,53 @@ a:hover{text-decoration:underline}
 
 .wrap{max-width:1180px;margin:0 auto;padding:0 16px 120px}
 /* Only applied when the tab changes, never on a data refresh: animating every
-   save would turn ordinary edits into a light show. */
-#main.swap{animation:panelIn var(--dur-slow) var(--ease-out) both}
-@keyframes panelIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+   save would turn ordinary edits into a light show.
+
+   The panel does not move as one slab. Each section, stat tile and row rises
+   on its own short delay, so the screen assembles instead of sliding. */
+@keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes riseInSm{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:none}}
+
+#main.swap > .section{animation:riseIn var(--rise) var(--ease-soft) backwards}
+#main.swap > .section:nth-child(1){animation-delay:20ms}
+#main.swap > .section:nth-child(2){animation-delay:80ms}
+#main.swap > .section:nth-child(3){animation-delay:140ms}
+#main.swap > .section:nth-child(4){animation-delay:200ms}
+#main.swap > .section:nth-child(5){animation-delay:250ms}
+#main.swap > .section:nth-child(n+6){animation-delay:290ms}
+
+#main.swap .stat{animation:riseInSm 520ms var(--ease-soft) backwards}
+#main.swap .stat:nth-child(1){animation-delay:60ms}
+#main.swap .stat:nth-child(2){animation-delay:105ms}
+#main.swap .stat:nth-child(3){animation-delay:150ms}
+#main.swap .stat:nth-child(4){animation-delay:195ms}
+#main.swap .stat:nth-child(n+5){animation-delay:240ms}
+
+/* Rows are capped: past a dozen the stagger stops being elegant and starts
+   being a wait, so everything after simply appears with the last of them. */
+#main.swap table.t tbody tr{animation:riseInSm 480ms var(--ease-soft) backwards;animation-delay:260ms}
+#main.swap table.t tbody tr:nth-child(1){animation-delay:130ms}
+#main.swap table.t tbody tr:nth-child(2){animation-delay:155ms}
+#main.swap table.t tbody tr:nth-child(3){animation-delay:180ms}
+#main.swap table.t tbody tr:nth-child(4){animation-delay:205ms}
+#main.swap table.t tbody tr:nth-child(5){animation-delay:225ms}
+#main.swap table.t tbody tr:nth-child(6){animation-delay:245ms}
+#main.swap .j-entry{animation:riseInSm 520ms var(--ease-soft) backwards;animation-delay:200ms}
+#main.swap .bar-row{animation:riseInSm 480ms var(--ease-soft) backwards;animation-delay:220ms}
+
+/* Loading placeholder, so a chart or a news list fades up out of something
+   rather than popping into an empty box. */
+.sk{
+  background:linear-gradient(90deg,var(--glass-2) 25%,var(--glass-3) 37%,var(--glass-2) 63%);
+  background-size:200% 100%;animation:skShimmer 1.5s linear infinite;
+  border-radius:var(--radius-sm);
+}
+@keyframes skShimmer{from{background-position:200% 0}to{background-position:-200% 0}}
 
 /* ---------- header ---------- */
+@keyframes headIn{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:none}}
 header.top{
+  animation:headIn 520ms var(--ease-soft) both;
   position:sticky;top:0;z-index:40;
   background:var(--ink);
   border-bottom:1px solid var(--line);
@@ -113,13 +160,13 @@ nav.tabs{
 .tab-ink{
   position:absolute;bottom:0;left:0;height:2px;width:0;background:var(--accent);
   transform:translateX(0);transform-origin:left center;pointer-events:none;
-  transition:transform var(--dur-slow) var(--ease-out),width var(--dur-slow) var(--ease-out);
+  transition:transform 520ms var(--ease-soft),width 520ms var(--ease-soft);
 }
 .tab-ink.init{transition:none}
 .tabs-in::-webkit-scrollbar{display:none}
 .tab{
   padding:12px 15px;font-size:14px;color:var(--text-3);border-bottom:2px solid transparent;
-  white-space:nowrap;transition:color var(--dur) var(--ease);font-weight:500;
+  white-space:nowrap;transition:color 320ms var(--ease-soft);font-weight:500;
 }
 .tab:hover{color:var(--text-2)}
 .tab.on{color:var(--accent)}
@@ -235,7 +282,7 @@ table.t tr:last-child td{border-bottom:none}
   position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.66);
 
   display:flex;align-items:flex-start;justify-content:center;padding:28px 16px;overflow-y:auto;
-  animation:fade var(--dur) var(--ease) both;
+  animation:fade 240ms var(--ease-glide) both;
 }
 .scrim.closing{animation:fadeOut var(--dur-fast) var(--ease) both}
 @keyframes fade{from{opacity:0}to{opacity:1}}
@@ -244,11 +291,11 @@ table.t tr:last-child td{border-bottom:none}
   width:100%;max-width:560px;background:#18181b;
   border:1px solid var(--line-2);border-radius:var(--radius);
   box-shadow:0 30px 80px -30px rgba(0,0,0,.95);
-  animation:pop var(--dur-slow) var(--ease-out) both;
+  animation:pop 420ms var(--ease-soft) both;
 }
 .scrim.closing .modal{animation:popOut var(--dur-fast) var(--ease) both}
 .modal.wide{max-width:920px}
-@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:translateY(14px) scale(.985)}to{opacity:1;transform:none}}
 @keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(4px) scale(.99)}}
 .modal-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
 .modal-head h3{margin:0;font-size:16px;font-weight:600}
@@ -262,7 +309,7 @@ table.t tr:last-child td{border-bottom:none}
   padding:10px 18px;border-radius:99px;background:#1f1f23;
   border:1px solid var(--line-2);font-size:13.5px;
   box-shadow:0 14px 34px -16px rgba(0,0,0,.9);max-width:90vw;
-  animation:rise var(--dur-slow) var(--ease-out) both;
+  animation:rise 460ms var(--ease-soft) both;
 }
 .toast.out{animation:sink var(--dur) var(--ease) both}
 .toast.err{border-color:rgba(217,122,108,.4);color:#f0b9b1}
@@ -780,7 +827,7 @@ function drawChart(box, full, rangeKey, showMA){
     xlab += `<text x="${X(idx).toFixed(1)}" y="${H-5}" fill="${CSSV("--text-3")}" font-size="11" text-anchor="${i===0?"start":(i===nLab-1?"end":"middle")}">${esc(txt)}</text>`;
   }
 
-  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="animation:riseInSm 520ms var(--ease-soft) both">
     <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="${stroke}" stop-opacity=".22"/>
       <stop offset="100%" stop-color="${stroke}" stop-opacity="0"/>
@@ -813,9 +860,9 @@ function drawChart(box, full, rangeKey, showMA){
            start value to transition from and would snap straight to the end.
            Reading a layout property forces that first value to stick. */
         void pl.getBoundingClientRect();
-        pl.style.transition = "stroke-dashoffset 520ms cubic-bezier(.22,1,.36,1)";
+        pl.style.transition = "stroke-dashoffset 760ms cubic-bezier(.16,1,.3,1)";
         pl.style.strokeDashoffset = "0px";
-        setTimeout(()=>{ pl.style.strokeDasharray = ""; pl.style.transition = ""; }, 620);
+        setTimeout(()=>{ pl.style.strokeDasharray = ""; pl.style.transition = ""; }, 860);
       }
     }catch(e){}
   }
@@ -1046,7 +1093,7 @@ async function openSymbol(sym){
         <button data-ma="m200" class="on">200 day</button>
       </div>
     </div>
-    <div class="chart-box" id="chartBox" style="margin-top:8px"><p class="note">Loading history…</p></div>
+    <div class="chart-box" id="chartBox" style="margin-top:8px"><div class="sk" style="width:100%;height:100%"></div></div>
     <div class="legend">
       <span><i style="background:var(--accent-2)"></i>50 day average</span>
       <span><i style="background:repeating-linear-gradient(90deg,var(--text-2) 0 5px,transparent 5px 9px)"></i>200 day average</span>
@@ -1083,7 +1130,7 @@ async function openSymbol(sym){
     </div></div>
 
     <div style="margin-top:18px"><div class="section-head"><h2>Recent news</h2></div>
-    <div id="newsBox"><p class="note">Loading…</p></div></div>
+    <div id="newsBox">${[0,1,2].map(i=>`<div class="sk" style="height:13px;width:${88-i*11}%;margin:14px 0"></div>`).join("")}</div></div>
 
     <p class="note" style="margin-top:18px">Figures come from the provider as reported and can lag or carry errors. Check anything you are about to act on against the filing.</p>
   `;

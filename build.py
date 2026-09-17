@@ -19,7 +19,7 @@ import re
 import struct
 import zlib
 
-VERSION = "1.7"
+VERSION = "1.8"
 HERE = os.path.dirname(os.path.abspath(__file__))
 DOCS = os.path.join(HERE, "docs")
 
