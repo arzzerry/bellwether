@@ -114,26 +114,42 @@ which is a white box on this dark theme. That is exactly how the email fields
 broke once already.
 
 ## Design
-**Obsidian and platinum.** Near-black neutral base (`#0a0a0b`) with a single
-platinum accent (`#e8e8ec`). Chosen over four alternatives for "clean, modern,
-premium", and deliberately unlike the other four projects, so do not drift it
-back towards the usual blue, purple or orange house palette.
+**Spectrum.** One gradient — violet, pink, coral, gold
+(`--g1` to `--g4`, composed as `--grad`) on a deep violet-black base in dark and
+a warm off-white in light. Replaced an earlier obsidian monochrome, which
+replaced a teal and sand scheme before that, so treat the palette as settled
+only until he says otherwise.
 
-The treatment matters as much as the palette, and an earlier glassmorphism pass
-was removed to get here. Hold the line on:
+Rules that keep a colourful theme from turning tacky:
 
-- **Flat surfaces.** No backdrop blur, no frosted panels, no noise overlay, no
-  colour washes. One barely-there radial lift at the top of the page is the
-  only gradient in the app.
-- **Hairline borders** (`--line`, white at 7.5%) and tight radii (12px cards,
-  9px controls). Depth comes from a 1px shadow at most.
-- **Colour is spent only where it carries meaning.** Green and red belong to
-  gains and losses and nothing else; the platinum accent marks what is
-  actionable. Everything else is a neutral, and hierarchy is carried by weight
-  and space.
-- Because the theme is near-monochrome, two greys cannot be told apart in a
-  chart. The 200 day average is **dashed** for that reason — pattern, not
-  brightness. Do not "fix" this by tinting it.
+- **The gradient is spent on four things only**: the brand mark, the primary
+  button, the active tab underline, and the chart line and its fill. It never
+  goes behind text and never fills a large surface.
+- **Green and red belong to money and nothing else.** The palette was chosen
+  partly because violet and gold stay clear of them. Do not introduce a
+  red or green accent anywhere in the interface.
+- The chart line carries the gradient rather than a gain/loss colour, so the
+  move over the visible range is stated in words in the legend instead
+  (`#rangeMove`). If you ever revert the line to a flat colour, that label is
+  redundant — but do not remove it while the gradient is there.
+- **Sparklines keep the gain/loss colour.** They are far too small for a
+  gradient to read as anything but mud.
+
+### Light and dark
+Both modes live in `:root` and `:root[data-theme="light"]`. Everything is a
+token; there are no bare colours left in the stylesheet, which is what makes
+light mode possible at all.
+
+- A script in `<head>` sets `data-theme` **before first paint** so switching
+  never flashes. It follows the system until the user picks a side, after which
+  the choice is remembered in `localStorage` under `bellwether.theme`.
+- The theme is deliberately **per device and not synced** — it is a property of
+  the screen you are looking at, not of the account.
+- `CSSV()` caches token lookups, so `applyTheme()` **must** flush that cache and
+  re-render. Charts and sparklines read their colours at draw time; without the
+  flush they keep the previous theme's colours until the next redraw.
+- A `data:` URI cannot read a custom property, so the select chevron is set
+  twice, once per theme. Any future inline SVG background needs the same.
 
 ### Motion
 Durations and easings are tokens (`--dur-fast`, `--dur`, `--dur-slow`,

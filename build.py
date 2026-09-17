@@ -19,15 +19,29 @@ import re
 import struct
 import zlib
 
-VERSION = "1.8"
+VERSION = "1.9"
 HERE = os.path.dirname(os.path.abspath(__file__))
 DOCS = os.path.join(HERE, "docs")
 
-# Obsidian and platinum, matching the app's tokens.
-INK = (10, 10, 11)
-INK_LIFT = (28, 28, 32)
-PLATINUM = (232, 232, 236)
-GREEN = (70, 193, 126)
+# Spectrum, matching the app's --g1..--g4 tokens. The icon is the gradient
+# tile with the mark knocked out of it, exactly as the header shows it.
+GRAD = [(0.00, (139, 92, 246)),    # violet
+        (0.38, (236, 72, 153)),    # pink
+        (0.68, (249, 115, 98)),    # coral
+        (1.00, (251, 191, 36))]    # gold
+GLYPH = (18, 10, 28)               # --accent-ink
+
+
+def grad_at(t):
+    """Colour at position t along the gradient, linearly interpolated."""
+    t = max(0.0, min(1.0, t))
+    for i in range(len(GRAD) - 1):
+        a, ca = GRAD[i]
+        b, cb = GRAD[i + 1]
+        if t <= b:
+            f = 0.0 if b == a else (t - a) / (b - a)
+            return tuple(int(ca[k] + (cb[k] - ca[k]) * f) for k in range(3))
+    return GRAD[-1][1]
 
 
 # ---------------------------------------------------------------- png writer
@@ -74,9 +88,7 @@ def make_icon(path, size):
     k = 0.82
     sc = lambda v: (16 + (v - 16) * k) * unit
     segments = [(sc(a), sc(b), sc(c), sc(d)) for a, b, c, d in segments]
-    stroke = 2.1 * k * unit / 2.0
-    dot = (sc(12), sc(15), 2.1 * k * unit)
-    cx, cy, radius = 16 * unit, 16 * unit, 15.2 * unit
+    stroke = 2.6 * k * unit / 2.0
 
     big = []
     for y in range(n):
@@ -84,18 +96,13 @@ def make_icon(path, size):
         for x in range(n):
             px, py = x + 0.5, y + 0.5
 
-            # background: a soft teal lift towards the top left corner
-            d = ((px - cx) ** 2 + (py - cy) ** 2) ** 0.5 / radius
-            mix = max(0.0, min(1.0, 1.0 - d * 0.9))
-            col = tuple(int(INK[i] + (INK_LIFT[i] - INK[i]) * mix) for i in range(3))
+            # background: the gradient swept at 115 degrees, as in the app
+            col = grad_at((px * 0.78 + py * 0.36) / (n * 1.06))
 
-            if (px - dot[0]) ** 2 + (py - dot[1]) ** 2 <= dot[2] ** 2:
-                col = GREEN
-            else:
-                for (x1, y1, x2, y2) in segments:
-                    if dist_to_segment(px, py, x1, y1, x2, y2) <= stroke:
-                        col = PLATINUM
-                        break
+            for (x1, y1, x2, y2) in segments:
+                if dist_to_segment(px, py, x1, y1, x2, y2) <= stroke:
+                    col = GLYPH
+                    break
 
             row += bytes(col)
         big.append(row)
@@ -146,8 +153,8 @@ MANIFEST = """{
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#0a0a0b",
-  "theme_color": "#0a0a0b",
+  "background_color": "#0c0812",
+  "theme_color": "#0c0812",
   "icons": [
     { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
     { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
@@ -194,7 +201,7 @@ def build():
     # Stamp the build version beside the theme-color tag. Anchored by a regex
     # rather than a literal colour, so a palette change cannot silently turn
     # this into a no-op, and it raises rather than shipping an unstamped page.
-    web, n = re.subn(r'(<meta name="theme-color" content="#[0-9a-fA-F]{3,8}" />)',
+    web, n = re.subn(r'(<meta name="theme-color"[^>]*/>)',
                      r'\1\n<meta name="bw-version" content="%s" />' % VERSION, web, count=1)
     if n != 1:
         raise SystemExit("could not find the theme-color meta tag to stamp the version onto")

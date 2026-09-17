@@ -5,50 +5,132 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Bellwether</title>
 <meta name="description" content="A private watchlist, portfolio tracker, screener and trade journal that keeps everything on your own machine." />
-<meta name="theme-color" content="#0a0a0b" />
+<meta name="theme-color" content="#0c0812" id="themeColor" />
+<script>
+/* Set the theme before anything paints, so switching never flashes. With no
+   saved choice we follow the system, and keep following it until one is made. */
+(function(){
+  try{
+    var t = localStorage.getItem("bellwether.theme");
+    if(t !== "light" && t !== "dark"){
+      t = (window.matchMedia && matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+    }
+    document.documentElement.setAttribute("data-theme", t);
+  }catch(e){ document.documentElement.setAttribute("data-theme", "dark"); }
+})();
+</script>
 <style>
-:root{
-  /* Obsidian and platinum. Colour is spent only where it carries meaning:
-     gains, losses, and the one accent that marks what is actionable.
-     Everything else is a neutral, and the hierarchy is carried by weight
-     and space rather than hue. */
-  --ink:#0a0a0b;
-  --ink-2:#0e0e10;
-  --glass:#141416;
-  --glass-2:#1a1a1d;
-  --glass-3:#232327;
-  --line:rgba(255,255,255,.075);
-  --line-2:rgba(255,255,255,.15);
-  --accent:#e8e8ec;
-  --accent-2:#c6c6ce;
-  --accent-3:#82828d;
-  --accent-ink:#131315;
-  --text:#f4f4f5;
-  --text-2:#a1a1aa;
-  --text-3:#6e6e78;
-  --up:#46c17e;
-  --up-bg:rgba(70,193,126,.13);
-  --down:#ef6a5c;
-  --down-bg:rgba(239,106,92,.13);
+/* ============================================================
+   Spectrum. One gradient — violet, pink, coral, gold — spent only on the
+   brand mark, the primary action, the active tab and the chart. Never behind
+   text, and never anywhere it could be confused with the green and red that
+   mean money.
+
+   Both modes are defined here. A script in <head> sets data-theme before
+   first paint, so switching never flashes.
+   ============================================================ */
+:root,:root[data-theme="dark"]{
+  --g1:#8b5cf6; --g2:#ec4899; --g3:#f97362; --g4:#fbbf24;
+  --grad:linear-gradient(115deg,var(--g1) 0%,var(--g2) 38%,var(--g3) 68%,var(--g4) 100%);
+
+  --ink:#0c0812;
+  --ink-2:#120c1a;
+  --wash:radial-gradient(900px 520px at 10% -12%,rgba(139,92,246,.20),transparent 60%),
+         radial-gradient(760px 440px at 95% 2%,rgba(251,191,36,.11),transparent 58%),
+         linear-gradient(180deg,#0d0914 0%,#0c0812 45%,#09060e 100%);
+  --glass:#171024;
+  --glass-2:#1f172e;
+  --glass-3:#2a2040;
+  --panel:#1b1429;
+  --field:#100b1a;
+  --field-2:#140e20;
+  --toast:#241a36;
+
+  --line:rgba(255,255,255,.09);
+  --line-2:rgba(255,255,255,.17);
+  --line-soft:rgba(255,255,255,.07);
+  --hover:rgba(255,255,255,.05);
+  --chip:rgba(255,255,255,.10);
+  --track:rgba(255,255,255,.09);
+  --dot:rgba(255,255,255,.20);
+  --sel:rgba(192,132,252,.30);
+  --ring:rgba(192,132,252,.22);
+
+  --accent:#c084fc;
+  --accent-2:#a78bfa;
+  --accent-3:#7d6ba3;
+  --accent-ink:#120a1c;
+
+  --text:#f1ecf8;
+  --text-2:#aa9dc2;
+  --text-3:#7a6d94;
+
+  --up:#3ddc97;
+  --up-bg:rgba(61,220,151,.14);
+  --down:#ff6b81;
+  --down-bg:rgba(255,107,129,.14);
+  --down-line:rgba(255,107,129,.34);
+
+  --shadow:0 1px 2px rgba(0,0,0,.45);
+  --shadow-lg:0 30px 80px -30px rgba(0,0,0,.92);
+
   --radius:12px;
   --radius-sm:9px;
-  /* Motion: short, small and consistent. Premium reads as things settling
-     quickly, not as things sliding around. Everything animates transform and
-     opacity only, so nothing triggers layout. */
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --pad:18px;
+
   --dur-fast:130ms;
   --dur:200ms;
   --dur-slow:340ms;
   --ease:cubic-bezier(.4,0,.2,1);
   --ease-out:cubic-bezier(.22,1,.36,1);
-  /* The house easing: a long, soft settle. Content is staggered in on this
-     curve rather than a whole panel moving as one slab, which is what makes
-     the other apps feel unhurried. */
   --ease-soft:cubic-bezier(.16,1,.3,1);
   --ease-glide:cubic-bezier(.22,.61,.36,1);
   --rise:600ms;
-  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
-  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-  --pad:18px;
+}
+
+:root[data-theme="light"]{
+  --ink:#faf7fd;
+  --ink-2:#f3eefa;
+  --wash:radial-gradient(900px 520px at 10% -12%,rgba(139,92,246,.13),transparent 60%),
+         radial-gradient(760px 440px at 95% 2%,rgba(251,191,36,.12),transparent 58%),
+         linear-gradient(180deg,#fbf9fe 0%,#faf7fd 45%,#f6f2fb 100%);
+  --glass:#ffffff;
+  --glass-2:#f5f0fb;
+  --glass-3:#ece3f7;
+  --panel:#ffffff;
+  --field:#ffffff;
+  --field-2:#fbf9fe;
+  --toast:#241a36;
+
+  --line:rgba(45,20,70,.11);
+  --line-2:rgba(45,20,70,.20);
+  --line-soft:rgba(45,20,70,.08);
+  --hover:rgba(45,20,70,.04);
+  --chip:rgba(124,58,237,.10);
+  --track:rgba(45,20,70,.09);
+  --dot:rgba(45,20,70,.18);
+  --sel:rgba(139,92,246,.22);
+  --ring:rgba(124,58,237,.18);
+
+  --accent:#7c3aed;
+  --accent-2:#8b5cf6;
+  --accent-3:#a78bfa;
+  --accent-ink:#ffffff;
+
+  --text:#1c1030;
+  --text-2:#5f4f7d;
+  --text-3:#8d7da8;
+
+  --up:#0f8f64;
+  --up-bg:rgba(15,143,100,.13);
+  --down:#d4365a;
+  --down-bg:rgba(212,54,90,.12);
+  --down-line:rgba(212,54,90,.3);
+
+  --shadow:0 1px 2px rgba(45,20,70,.07);
+  --shadow-lg:0 30px 70px -30px rgba(45,20,70,.35);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 /* Reserve the scrollbar track. Opening a modal hides body overflow, and
@@ -68,15 +150,13 @@ body{
    No noise, no colour washes: the restraint is the point. */
 body::before{
   content:"";position:fixed;inset:0;z-index:-2;
-  background:
-    radial-gradient(1200px 680px at 50% -12%, rgba(255,255,255,.035), transparent 62%),
-    linear-gradient(180deg,#0b0b0c 0%,#0a0a0b 40%,#080809 100%);
+  background:var(--wash);
 }
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;background:none;border:none;padding:0}
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
-::selection{background:rgba(255,255,255,.25)}
+::selection{background:var(--sel)}
 
 .wrap{max-width:1180px;margin:0 auto;padding:0 16px 120px}
 /* Only applied when the tab changes, never on a data refresh: animating every
@@ -133,7 +213,8 @@ header.top{
 }
 .top-in{max-width:1180px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:14px}
 .brand{display:flex;align-items:center;gap:10px;min-width:0}
-.mark{width:30px;height:30px;flex:none}
+.mark{width:30px;height:30px;flex:none;border-radius:9px;background:var(--grad);display:grid;place-items:center}
+.mark svg{width:19px;height:19px}
 .brand h1{font-size:19px;margin:0;font-weight:600;letter-spacing:.2px}
 .brand .tag{font-size:11px;color:var(--text-3);letter-spacing:.14em;text-transform:uppercase;margin-top:-2px}
 .top-actions{margin-left:auto;display:flex;align-items:center;gap:8px}
@@ -144,9 +225,15 @@ header.top{
              border-color var(--dur-fast) var(--ease),transform var(--dur-fast) var(--ease);
 }
 .icon-btn:active{transform:scale(.94)}
+/* One button, two glyphs: whichever mode you would switch TO is the one shown. */
+.ico-sun,.ico-moon{transition:opacity var(--dur) var(--ease),transform var(--dur-slow) var(--ease-soft)}
+:root[data-theme="dark"] .ico-sun{display:block}
+:root[data-theme="dark"] .ico-moon{display:none}
+:root[data-theme="light"] .ico-sun{display:none}
+:root[data-theme="light"] .ico-moon{display:block}
 .icon-btn:hover{color:var(--accent);border-color:var(--line-2);background:var(--glass-3)}
 .icon-btn svg{width:17px;height:17px}
-.icon-btn.signed{color:var(--accent);border-color:var(--line-2);background:rgba(255,255,255,.09)}
+.icon-btn.signed{color:var(--accent);border-color:var(--line-2);background:var(--chip)}
 .stale{font-size:11.5px;color:var(--text-3);font-family:var(--mono);white-space:nowrap}
 
 /* ---------- tabs ---------- */
@@ -158,7 +245,7 @@ nav.tabs{
 .tabs-in{max-width:1180px;margin:0 auto;padding:0 16px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;position:relative}
 /* One indicator that travels, rather than four borders blinking on and off. */
 .tab-ink{
-  position:absolute;bottom:0;left:0;height:2px;width:0;background:var(--accent);
+  position:absolute;bottom:0;left:0;height:2px;width:0;background:var(--grad);border-radius:2px;
   transform:translateX(0);transform-origin:left center;pointer-events:none;
   transition:transform 520ms var(--ease-soft),width 520ms var(--ease-soft);
 }
@@ -176,7 +263,7 @@ nav.tabs{
   background:var(--glass);
   border:1px solid var(--line);
   border-radius:var(--radius);
-  box-shadow:0 1px 2px rgba(0,0,0,.4);
+  box-shadow:var(--shadow);
 }
 .card.pad{padding:var(--pad)}
 .section{margin-top:22px}
@@ -195,12 +282,13 @@ nav.tabs{
 }
 .btn:active:not(:disabled){transform:scale(.975)}
 .btn:hover{background:var(--glass-3);border-color:var(--accent-3)}
-.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
-.btn.primary:hover{background:#ffffff}
+.btn.primary{background:var(--grad);color:var(--accent-ink);border-color:transparent;font-weight:600;
+  background-size:150% 100%;background-position:0% 0;transition:background-position 420ms var(--ease-soft),transform var(--dur-fast) var(--ease)}
+.btn.primary:hover{background-position:100% 0}
 .btn.ghost{border-color:transparent;background:transparent;color:var(--text-3)}
 .btn.ghost:hover{color:var(--text);background:var(--glass-2)}
 .btn.sm{padding:5px 10px;font-size:12.5px}
-.btn.danger{color:var(--down);border-color:rgba(217,122,108,.3)}
+.btn.danger{color:var(--down);border-color:var(--down-line)}
 .btn.danger:hover{background:var(--down-bg)}
 .btn svg{width:15px;height:15px}
 .btn:disabled{opacity:.42;cursor:not-allowed}
@@ -208,12 +296,12 @@ nav.tabs{
 /* ---------- inputs ---------- */
 input[type=text],input[type=number],input[type=date],input[type=password],input[type=email],input[type=search],input[type=tel],input[type=url],select,textarea{
   width:100%;padding:9px 11px;border-radius:var(--radius-sm);
-  border:1px solid var(--line);background:#0e0e10;color:var(--text);
+  border:1px solid var(--line);background:var(--field);color:var(--text);
   font-size:14px;
   transition:border-color var(--dur-fast) var(--ease),background var(--dur-fast) var(--ease),
              box-shadow var(--dur-fast) var(--ease);
 }
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--line-2);background:#111113;box-shadow:0 0 0 3px rgba(255,255,255,.05)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent-3);background:var(--field-2);box-shadow:0 0 0 3px var(--ring)}
 /* Chrome paints autofilled fields near-white, which is glaring on a dark
    theme. There is no background-color override for it, so the fill is faked
    with an inset shadow and the long transition keeps it from flashing. */
@@ -221,13 +309,14 @@ input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus{
   -webkit-text-fill-color:var(--text);
-  -webkit-box-shadow:0 0 0 1000px #0e0e10 inset;
+  -webkit-box-shadow:0 0 0 1000px var(--field) inset;
   caret-color:var(--text);
   transition:background-color 9999s ease-out 0s;
 }
 input::placeholder,textarea::placeholder{color:var(--text-3)}
 textarea{resize:vertical;min-height:70px;line-height:1.55}
-select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 9px center;background-size:15px;padding-right:32px}
+select{appearance:none;background-repeat:no-repeat;background-position:right 9px center;background-size:15px;padding-right:32px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23aa9dc2' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>")}
+:root[data-theme="light"] select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f4f7d' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>")}
 label.fld{display:block;margin-bottom:12px}
 label.fld > span{display:block;font-size:12px;color:var(--text-2);margin-bottom:5px;letter-spacing:.02em}
 .row{display:grid;gap:12px}
@@ -253,9 +342,9 @@ table.t th{
 table.t th:first-child,table.t td:first-child{text-align:left;padding-left:2px}
 table.t th.sortable{cursor:pointer}
 table.t th.sortable:hover{color:var(--accent-2)}
-table.t td{padding:11px 12px;text-align:right;border-bottom:1px solid rgba(255,255,255,.07);white-space:nowrap}
+table.t td{padding:11px 12px;text-align:right;border-bottom:1px solid var(--line-soft);white-space:nowrap}
 table.t tbody tr{transition:background var(--dur-fast) var(--ease)}
-table.t tbody tr:hover{background:rgba(255,255,255,.045)}
+table.t tbody tr:hover{background:var(--hover)}
 table.t tbody tr.clickable{cursor:pointer}
 table.t td.num{font-family:var(--mono);letter-spacing:-.2px}
 table.t tr:last-child td{border-bottom:none}
@@ -267,8 +356,8 @@ table.t tr:last-child td{border-bottom:none}
 .pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11.5px;font-family:var(--mono);}
 .pill.up{background:var(--up-bg)}
 .pill.down{background:var(--down-bg)}
-.pill.flat{background:rgba(255,255,255,.08)}
-.tagchip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11.5px;background:rgba(255,255,255,.1);color:var(--accent-2);border:1px solid var(--line);margin:2px 4px 2px 0}
+.pill.flat{background:var(--chip)}
+.tagchip{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11.5px;background:var(--chip);color:var(--accent);border:1px solid var(--line);margin:2px 4px 2px 0}
 
 /* ---------- empty ---------- */
 .empty{text-align:center;padding:44px 20px;color:var(--text-3)}
@@ -288,9 +377,9 @@ table.t tr:last-child td{border-bottom:none}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 @keyframes fadeOut{from{opacity:1}to{opacity:0}}
 .modal{
-  width:100%;max-width:560px;background:#18181b;
+  width:100%;max-width:560px;background:var(--panel);
   border:1px solid var(--line-2);border-radius:var(--radius);
-  box-shadow:0 30px 80px -30px rgba(0,0,0,.95);
+  box-shadow:var(--shadow-lg);
   animation:pop 420ms var(--ease-soft) both;
 }
 .scrim.closing .modal{animation:popOut var(--dur-fast) var(--ease) both}
@@ -306,13 +395,13 @@ table.t tr:last-child td{border-bottom:none}
 /* ---------- toast ---------- */
 #toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none}
 .toast{
-  padding:10px 18px;border-radius:99px;background:#1f1f23;
+  padding:10px 18px;border-radius:99px;background:var(--toast);color:#f1ecf8;
   border:1px solid var(--line-2);font-size:13.5px;
   box-shadow:0 14px 34px -16px rgba(0,0,0,.9);max-width:90vw;
   animation:rise 460ms var(--ease-soft) both;
 }
 .toast.out{animation:sink var(--dur) var(--ease) both}
-.toast.err{border-color:rgba(217,122,108,.4);color:#f0b9b1}
+.toast.err{border-color:var(--down-line);color:#ffc2cb}
 @keyframes rise{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
 @keyframes sink{from{opacity:1;transform:none}to{opacity:0;transform:translateY(6px) scale(.98)}}
 
@@ -328,7 +417,7 @@ table.t tr:last-child td{border-bottom:none}
 .cx-line{stroke:var(--accent-3);stroke-width:1;stroke-dasharray:3 3;opacity:.6}
 .tip{
   position:absolute;pointer-events:none;padding:8px 11px;border-radius:9px;
-  background:rgba(12,28,27,.96);border:1px solid var(--line-2);font-size:12.5px;
+  background:var(--panel);border:1px solid var(--line-2);font-size:12.5px;color:var(--text);
   font-family:var(--mono);white-space:nowrap;z-index:5;line-height:1.5;
   box-shadow:0 10px 24px -12px rgba(0,0,0,.9);
 }
@@ -357,21 +446,21 @@ table.t tr:last-child td{border-bottom:none}
 .news-item .m{font-size:11.5px;color:var(--text-3);margin-top:3px;font-family:var(--mono)}
 .bar-row{display:flex;align-items:center;gap:10px;padding:7px 0}
 .bar-row .lbl{width:62px;font-weight:600;font-size:13px;flex:none}
-.bar-track{flex:1;height:7px;border-radius:99px;background:rgba(255,255,255,.09);overflow:hidden}
-.bar-fill{height:100%;background:var(--accent-2);border-radius:99px}
+.bar-track{flex:1;height:7px;border-radius:99px;background:var(--track);overflow:hidden}
+.bar-fill{height:100%;background:var(--grad);border-radius:99px}
 .bar-row .val{width:64px;text-align:right;font-family:var(--mono);font-size:12.5px;color:var(--text-2);flex:none}
 
 /* ---------- misc ---------- */
 .note{font-size:12.5px;color:var(--text-3);line-height:1.6}
-.warn{padding:11px 14px;border-radius:var(--radius-sm);background:rgba(255,255,255,.07);border:1px solid var(--line);font-size:13px;color:var(--text-2);line-height:1.6}
+.warn{padding:11px 14px;border-radius:var(--radius-sm);background:var(--glass-2);border:1px solid var(--line);font-size:13px;color:var(--text-2);line-height:1.6}
 .rule-row{display:grid;grid-template-columns:1.5fr .9fr 1fr auto;gap:8px;align-items:center;margin-bottom:8px}
-.prog{height:3px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden;margin-top:10px}
-.prog i{display:block;height:100%;background:var(--accent);transition:width .25s}
+.prog{height:3px;border-radius:99px;background:var(--track);overflow:hidden;margin-top:10px}
+.prog i{display:block;height:100%;background:var(--grad);transition:width .25s}
 .j-entry{padding:15px 16px;border-radius:var(--radius-sm);background:var(--glass-2);border:1px solid var(--line);margin-bottom:10px}
 .j-entry .jh{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .j-entry .jb{font-size:13.5px;color:var(--text-2);line-height:1.65;margin-top:9px;white-space:pre-wrap}
 .conv{display:inline-flex;gap:2px;vertical-align:middle}
-.conv i{width:6px;height:6px;border-radius:99px;background:rgba(255,255,255,.2)}
+.conv i{width:6px;height:6px;border-radius:99px;background:var(--dot)}
 .conv i.on{background:var(--accent)}
 footer.foot{text-align:center;padding:36px 16px 20px;color:var(--text-3);font-size:12px;line-height:1.7}
 
@@ -392,12 +481,12 @@ footer.foot{text-align:center;padding:36px 16px 20px;color:var(--text-3);font-si
 <header class="top">
   <div class="top-in">
     <div class="brand">
-      <svg class="mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-        <circle cx="16" cy="16" r="14.5" stroke="rgba(255,255,255,.18)"/>
-        <path d="M6 22.5 L12 15 L17 19 L26 8.5" stroke="#e8e8ec" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="12" cy="15" r="2.1" fill="#46c17e"/>
-        <path d="M21.5 8.5 H26 V13" stroke="#e8e8ec" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none">
+          <path d="M6 22.5 L12 15 L17 19 L26 8.5" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M21.5 8.5 H26 V13" stroke="var(--accent-ink)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
       <div>
         <h1>Bellwether</h1>
         <div class="tag">watch · hold · test · record</div>
@@ -407,6 +496,10 @@ footer.foot{text-align:center;padding:36px 16px 20px;color:var(--text-3);font-si
       <span class="stale" id="lastSync"></span>
       <button class="icon-btn" id="btnRefresh" title="Refresh quotes" aria-label="Refresh quotes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+      </button>
+      <button class="icon-btn" id="btnTheme" title="Switch between light and dark" aria-label="Switch between light and dark">
+        <svg class="ico-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg class="ico-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
       </button>
       <button class="icon-btn" id="btnAccount" title="Sign in to sync" aria-label="Account" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -472,9 +565,11 @@ function compact(n){
 }
 /* Chart and sparkline colours come from the CSS variables, so a theme
    change is a token change and never a hunt through the drawing code. */
-const CSSV = (() => {
-  const cache = {};
-  return n => cache[n] || (cache[n] = getComputedStyle(document.documentElement).getPropertyValue(n).trim());
+let CSSV = (() => {
+  let cache = {};
+  const f = n => cache[n] || (cache[n] = getComputedStyle(document.documentElement).getPropertyValue(n).trim());
+  f.flush = () => { cache = {}; };
+  return f;
 })();
 
 const dirClass = n => n==null||!isFinite(n)||n===0 ? "flat" : (n>0?"up":"down");
@@ -808,7 +903,12 @@ function drawChart(box, full, rangeKey, showMA){
   const area = line ? line + ` L ${X(data.length-1).toFixed(1)} ${(P.t+ih).toFixed(1)} L ${X(0).toFixed(1)} ${(P.t+ih).toFixed(1)} Z` : "";
 
   const up = data[data.length-1].c >= data[0].c;
-  const stroke = up ? CSSV("--up") : CSSV("--down");
+  /* The line carries the brand gradient rather than a gain/loss colour; the
+     move over the visible range is stated in words in the legend instead, so
+     no information is lost to the decoration. */
+  const stroke = "url(#lineGrad)";
+  const dotCol = up ? CSSV("--up") : CSSV("--down");
+  const gs = ["--g1","--g2","--g3","--g4"].map(n=>CSSV(n));
 
   const ticks = 4;
   let grid = "";
@@ -828,10 +928,16 @@ function drawChart(box, full, rangeKey, showMA){
   }
 
   box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="animation:riseInSm 520ms var(--ease-soft) both">
-    <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${stroke}" stop-opacity=".22"/>
-      <stop offset="100%" stop-color="${stroke}" stop-opacity="0"/>
-    </linearGradient></defs>
+    <defs>
+      <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+        ${gs.map((c,k)=>`<stop offset="${[0,38,68,100][k]}%" stop-color="${c}"/>`).join("")}
+      </linearGradient>
+      <linearGradient id="ag" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${gs[0]}" stop-opacity=".30"/>
+        <stop offset="55%" stop-color="${gs[1]}" stop-opacity=".12"/>
+        <stop offset="100%" stop-color="${gs[1]}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
     ${grid}${xlab}
     <path d="${area}" fill="url(#ag)"/>
     ${showMA.m200 ? `<path d="${path(ma200)}" fill="none" stroke="${CSSV("--text-2")}" stroke-width="1.2" stroke-dasharray="5 4" opacity=".75"/>` : ""}
@@ -839,7 +945,7 @@ function drawChart(box, full, rangeKey, showMA){
     <path class="price-line" d="${line}" fill="none" stroke="${stroke}" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/>
     <g id="cx" style="display:none">
       <line class="cx-line" y1="${P.t}" y2="${P.t+ih}"/>
-      <circle r="3.5" fill="${stroke}" stroke="${CSSV("--ink")}" stroke-width="1.5"/>
+      <circle r="3.5" fill="${dotCol}" stroke="${CSSV("--ink")}" stroke-width="1.5"/>
     </g>
   </svg><div class="tip" style="display:none"></div>`;
 
@@ -878,6 +984,7 @@ function drawChart(box, full, rangeKey, showMA){
     cxDot.setAttribute("cx", x); cxDot.setAttribute("cy", y);
     const chg = ((d.c - data[0].c)/data[0].c)*100;
     tip.innerHTML = `${esc(niceDate(d.d))}<br/><span style="font-size:14px">${money(d.c)}</span> <span class="${dirClass(chg)}">${pct(chg,1)}</span>`;
+    cxDot.setAttribute("fill", chg >= 0 ? CSSV("--up") : CSSV("--down"));
     tip.style.display = "";
     const tw = tip.offsetWidth, boxW = box.clientWidth;
     const lx = clamp(x/W*boxW - tw/2, 2, boxW - tw - 2);
@@ -896,7 +1003,7 @@ function sparkSVG(series){
   const d = series.slice(-60).map(x=>x.c);
   const lo = Math.min(...d), hi = Math.max(...d), rng = (hi-lo)||1;
   const pts = d.map((v,i)=>`${(i/(d.length-1)*72+1).toFixed(1)},${(24 - (v-lo)/rng*22 + 1).toFixed(1)}`).join(" ");
-  const col = d[d.length-1] >= d[0] ? CSSV("--up") : CSSV("--down");
+  const col = d[d.length-1] >= d[0] ? CSSV("--up") : CSSV("--down");   /* too small for a gradient to read */
   return `<svg class="spark" viewBox="0 0 74 26"><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" opacity=".85"/></svg>`;
 }
 
@@ -1095,6 +1202,7 @@ async function openSymbol(sym){
     </div>
     <div class="chart-box" id="chartBox" style="margin-top:8px"><div class="sk" style="width:100%;height:100%"></div></div>
     <div class="legend">
+      <span id="rangeMove"></span>
       <span><i style="background:var(--accent-2)"></i>50 day average</span>
       <span><i style="background:repeating-linear-gradient(90deg,var(--text-2) 0 5px,transparent 5px 9px)"></i>200 day average</span>
       ${rangeFrom52!=null?`<span style="margin-left:auto">${rangeFrom52.toFixed(0)}% of the way up its 52 week range</span>`:""}
@@ -1145,7 +1253,18 @@ async function openSymbol(sym){
 
   let range = "1Y", ma = {m50:true, m200:true}, series = null;
   const box = $("#chartBox");
-  function paint(){ if(series && box.isConnected) drawChart(box, series, range, ma); }
+  function paint(){
+    if(!series || !box.isConnected) return;
+    drawChart(box, series, range, ma);
+    const keep = RANGES[range] || 252;
+    const seg = series.slice(Math.max(0, series.length - keep));
+    const el = $("#rangeMove");
+    if(el && seg.length > 1){
+      const mv = (seg[seg.length-1].c - seg[0].c) / seg[0].c * 100;
+      el.innerHTML = `<strong style="color:var(--text-2);font-weight:500">${esc(range)}</strong>
+        <span class="${dirClass(mv)}" style="font-family:var(--mono)">${pct(mv,1)}</span>`;
+    }
+  }
   repaintChart = paint;
   onModalClose = ()=>{ repaintChart = null; };
   $$("#ranges button").forEach(b=>b.onclick = ()=>{
@@ -2095,6 +2214,46 @@ async function push(){
   save();
 }
 
+/* ============================ theme ============================ */
+/* The attribute is set in <head> before paint. This only handles switching,
+   remembering the choice, and following the system until one is made. */
+const THEMEKEY = "bellwether.theme";
+const curTheme = () => document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+
+function applyTheme(t, remember){
+  document.documentElement.setAttribute("data-theme", t);
+  const meta = $("#themeColor");
+  if(meta) meta.setAttribute("content", t === "light" ? "#faf7fd" : "#0c0812");
+  if(remember){ try{ localStorage.setItem(THEMEKEY, t); }catch(e){} }
+  /* Charts and sparklines read their colours from the tokens at draw time, so
+     the cache has to go and anything already drawn has to be drawn again. */
+  CSSV.flush();
+  const btn = $("#btnTheme");
+  if(btn) btn.title = t === "light" ? "Switch to dark" : "Switch to light";
+}
+
+function toggleTheme(){
+  applyTheme(curTheme() === "light" ? "dark" : "light", true);
+  render();
+  if(repaintChart) repaintChart();
+}
+
+/* Keep following the system until the user expresses a preference. */
+if(window.matchMedia){
+  const mq = matchMedia("(prefers-color-scheme: light)");
+  const onSys = e => {
+    let saved = null;
+    try{ saved = localStorage.getItem(THEMEKEY); }catch(_){}
+    if(saved !== "light" && saved !== "dark"){
+      applyTheme(e.matches ? "light" : "dark", false);
+      render();
+      if(repaintChart) repaintChart();
+    }
+  };
+  if(mq.addEventListener) mq.addEventListener("change", onSys);
+  else if(mq.addListener) mq.addListener(onSys);
+}
+
 /* ---- account UI ---- */
 function paintAccount(){
   const b = $("#btnAccount");
@@ -2378,6 +2537,8 @@ async function firstSync(){
 $("#btnSettings").onclick = settingsModal;
 $("#btnRefresh").onclick = ()=>refreshAll(true);
 $("#btnAccount").onclick = accountModal;
+$("#btnTheme").onclick = toggleTheme;
+applyTheme(curTheme(), false);
 paintAccount();
 
 render();
