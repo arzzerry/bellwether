@@ -191,8 +191,13 @@ def build():
         raise SystemExit("index.html does not look like the app; refusing to build.")
 
     web = html.replace("</head>", PWA_HEAD + "</head>", 1)
-    web = web.replace('<meta name="theme-color" content="#0a1414" />',
-                      '<meta name="theme-color" content="#0a1414" />\n<meta name="bw-version" content="%s" />' % VERSION, 1)
+    # Stamp the build version beside the theme-color tag. Anchored by a regex
+    # rather than a literal colour, so a palette change cannot silently turn
+    # this into a no-op, and it raises rather than shipping an unstamped page.
+    web, n = re.subn(r'(<meta name="theme-color" content="#[0-9a-fA-F]{3,8}" />)',
+                     r'\1\n<meta name="bw-version" content="%s" />' % VERSION, web, count=1)
+    if n != 1:
+        raise SystemExit("could not find the theme-color meta tag to stamp the version onto")
     # append the registration to the app's own closing script tag
     idx = web.rindex("</script>")
     web = web[:idx] + SW_REG + web[idx:]
