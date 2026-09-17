@@ -61,6 +61,29 @@ works — the app is local first and stays that way.
 - To wire a project up, fill `SUPA.url` and `SUPA.anon` at the top of the
   sync block from Settings -> API, then rebuild.
 
+### Auth
+Email and password only, with confirmation switched on. Two things are easy to
+break here:
+
+- **`handleAuthRedirect()` must run at boot.** Supabase returns confirmation
+  and password-reset links with the session in the URL fragment. Without it the
+  reset link is a dead end — the user lands on the app and nothing happens.
+  It consumes the fragment, strips it from the address bar, and for a recovery
+  link opens `newPasswordModal()`.
+- **The redirect allow-list is server-side.** `auth.site_url` and
+  `auth.additional_redirect_urls` live in `supabase/config.toml` and are applied
+  with `supabase config push`. If a new host is added, add it there or its
+  email links will bounce to the wrong origin.
+
+`config push` has no way to push a single key: it pushes the whole managed
+config, so always run `supabase config pull` then `supabase config diff` first
+and read the change list before pushing. A `config diff` that fails prints a
+JSON object with `_tag: "Error"` and no changes, which is easy to mistake for
+"nothing to do" — check for that field.
+
+A failed token refresh clears the session and re-renders on purpose, so the app
+never sits there looking signed in while every sync quietly fails.
+
 ## Design
 **Obsidian and platinum.** Near-black neutral base (`#0a0a0b`) with a single
 platinum accent (`#e8e8ec`). Chosen over four alternatives for "clean, modern,
