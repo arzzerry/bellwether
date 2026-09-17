@@ -84,6 +84,23 @@ JSON object with `_tag: "Error"` and no changes, which is easy to mistake for
 A failed token refresh clears the session and re-renders on purpose, so the app
 never sits there looking signed in while every sync quietly fails.
 
+**The built-in mail service is capped at two emails an hour for the whole
+project** (`auth.rate_limit.email_sent = 2`). A sign-up confirmation plus one
+reset request exhausts it, and the API then returns
+`over_email_send_rate_limit`. There is a second, separate throttle per address
+that returns "you can only request this after N seconds". These are different
+limits and must not be reported with the same message — telling someone to wait
+a minute when they are actually capped for the hour sends them into a loop that
+cannot succeed. That happened once already.
+
+To get a user in while the cap is hit, mint a link with the admin API instead,
+which does not send email and does not touch the quota:
+```
+POST /auth/v1/admin/generate_link   (service_role key)
+{"type":"recovery","email":"…","options":{"redirect_to":"https://bellwether-5uj.pages.dev/"}}
+```
+The long-term fix is connecting a real SMTP sender, which removes the cap.
+
 Password reset is two screens, both separate from the sign-in form:
 `resetRequestModal()` asks for the address, and the emailed link opens
 `newPasswordModal()`. The "if that address has an account" wording is

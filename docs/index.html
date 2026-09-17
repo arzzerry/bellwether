@@ -6,7 +6,7 @@
 <title>Bellwether</title>
 <meta name="description" content="A private watchlist, portfolio tracker, screener and trade journal that keeps everything on your own machine." />
 <meta name="theme-color" content="#0a0a0b" />
-<meta name="bw-version" content="1.5" />
+<meta name="bw-version" content="1.6" />
 <style>
 :root{
   /* Obsidian and platinum. Colour is spent only where it carries meaning:
@@ -2070,6 +2070,7 @@ function authFormModal(mode){
         if(/Invalid login/i.test(m)) m = "That email and password do not match an account. If you have not made one yet, create an account.";
         else if(/already registered|already exists/i.test(m)) m = "That email already has an account. Sign in instead.";
         else if(/Email not confirmed/i.test(m)) m = "Open the confirmation link in your email first, then sign in.";
+        else if(/rate limit|over_email_send/i.test(m)) m = "Email limit reached. The built-in mail service allows only two messages an hour for the whole app. Try again after the hour.";
         msg(m, "err");
       }
     });
@@ -2095,7 +2096,13 @@ async function handleAuthRedirect(){
   history.replaceState(null, "", location.pathname + location.search);
 
   const err = q.get("error_description");
-  if(err){ toast(err.replace(/\+/g, " "), true); return; }
+  if(err){
+    const plain = err.replace(/\+/g, " ");
+    toast(/expired|invalid/i.test(plain)
+      ? "That link has expired. Open the account menu and ask for a new one."
+      : plain, true);
+    return;
+  }
 
   const token = q.get("access_token");
   if(!token) return;
@@ -2166,9 +2173,11 @@ function resetRequestModal(prefill){
       msg("If that address has an account, a link is on its way. It expires after an hour, so open it soon.", "ok");
       btn.textContent = "Send it again";
     }catch(e){
-      const m = /rate|frequency|too many/i.test(e.message)
-        ? "That was sent very recently. Wait a minute before asking for another."
-        : e.message;
+      const m = /rate limit|over_email_send|too many/i.test(e.message)
+        ? "Email limit reached. The built-in mail service allows only two messages an hour for the whole app, and that is used up. Waiting a minute will not help — try again after the hour, or connect your own mail sender to remove the cap."
+        : (/frequency/i.test(e.message)
+           ? "That was sent moments ago. Give it a minute."
+           : e.message);
       msg(m, "err");
       btn.textContent = "Send the link";
     }finally{
