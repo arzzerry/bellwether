@@ -6,7 +6,7 @@
 <title>Bellwether</title>
 <meta name="description" content="A private watchlist, portfolio tracker, screener and trade journal that keeps everything on your own machine." />
 <meta name="theme-color" content="#0a0a0b" />
-<meta name="bw-version" content="1.6" />
+<meta name="bw-version" content="1.7" />
 <style>
 :root{
   /* Obsidian and platinum. Colour is spent only where it carries meaning:
@@ -33,11 +33,22 @@
   --down-bg:rgba(239,106,92,.13);
   --radius:12px;
   --radius-sm:9px;
+  /* Motion: short, small and consistent. Premium reads as things settling
+     quickly, not as things sliding around. Everything animates transform and
+     opacity only, so nothing triggers layout. */
+  --dur-fast:110ms;
+  --dur:180ms;
+  --dur-slow:300ms;
+  --ease:cubic-bezier(.4,0,.2,1);
+  --ease-out:cubic-bezier(.22,1,.36,1);
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   --pad:18px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* Reserve the scrollbar track. Opening a modal hides body overflow, and
+   without this the whole page jolts sideways as the scrollbar disappears. */
+html{scrollbar-gutter:stable}
 html,body{margin:0;padding:0}
 body{
   font-family:var(--sans);
@@ -63,6 +74,10 @@ a:hover{text-decoration:underline}
 ::selection{background:rgba(255,255,255,.25)}
 
 .wrap{max-width:1180px;margin:0 auto;padding:0 16px 120px}
+/* Only applied when the tab changes, never on a data refresh: animating every
+   save would turn ordinary edits into a light show. */
+#main.swap{animation:panelIn var(--dur-slow) var(--ease-out) both}
+@keyframes panelIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
 
 /* ---------- header ---------- */
 header.top{
@@ -79,8 +94,10 @@ header.top{
 .icon-btn{
   width:36px;height:36px;border-radius:10px;border:1px solid var(--line);
   background:var(--glass-2);display:grid;place-items:center;color:var(--text-2);
-  transition:.15s;
+  transition:color var(--dur-fast) var(--ease),background var(--dur-fast) var(--ease),
+             border-color var(--dur-fast) var(--ease),transform var(--dur-fast) var(--ease);
 }
+.icon-btn:active{transform:scale(.94)}
 .icon-btn:hover{color:var(--accent);border-color:var(--line-2);background:var(--glass-3)}
 .icon-btn svg{width:17px;height:17px}
 .icon-btn.signed{color:var(--accent);border-color:var(--line-2);background:rgba(255,255,255,.09)}
@@ -92,14 +109,21 @@ nav.tabs{
   background:var(--ink);
   border-bottom:1px solid var(--line);
 }
-.tabs-in{max-width:1180px;margin:0 auto;padding:0 16px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
+.tabs-in{max-width:1180px;margin:0 auto;padding:0 16px;display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;position:relative}
+/* One indicator that travels, rather than four borders blinking on and off. */
+.tab-ink{
+  position:absolute;bottom:0;left:0;height:2px;width:0;background:var(--accent);
+  transform:translateX(0);transform-origin:left center;pointer-events:none;
+  transition:transform var(--dur-slow) var(--ease-out),width var(--dur-slow) var(--ease-out);
+}
+.tab-ink.init{transition:none}
 .tabs-in::-webkit-scrollbar{display:none}
 .tab{
   padding:12px 15px;font-size:14px;color:var(--text-3);border-bottom:2px solid transparent;
-  white-space:nowrap;transition:.15s;font-weight:500;
+  white-space:nowrap;transition:color var(--dur) var(--ease);font-weight:500;
 }
 .tab:hover{color:var(--text-2)}
-.tab.on{color:var(--accent);border-bottom-color:var(--accent)}
+.tab.on{color:var(--accent)}
 
 /* ---------- cards ---------- */
 .card{
@@ -119,8 +143,11 @@ nav.tabs{
 .btn{
   padding:8px 14px;border-radius:var(--radius-sm);border:1px solid var(--line-2);
   background:var(--glass-2);color:var(--text);font-size:13.5px;font-weight:500;
-  transition:.15s;display:inline-flex;align-items:center;gap:7px;
+  transition:background var(--dur-fast) var(--ease),border-color var(--dur-fast) var(--ease),
+             color var(--dur-fast) var(--ease),transform var(--dur-fast) var(--ease);
+  display:inline-flex;align-items:center;gap:7px;
 }
+.btn:active:not(:disabled){transform:scale(.975)}
 .btn:hover{background:var(--glass-3);border-color:var(--accent-3)}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:600}
 .btn.primary:hover{background:#ffffff}
@@ -136,7 +163,9 @@ nav.tabs{
 input[type=text],input[type=number],input[type=date],input[type=password],input[type=email],input[type=search],input[type=tel],input[type=url],select,textarea{
   width:100%;padding:9px 11px;border-radius:var(--radius-sm);
   border:1px solid var(--line);background:#0e0e10;color:var(--text);
-  font-size:14px;transition:.15s;
+  font-size:14px;
+  transition:border-color var(--dur-fast) var(--ease),background var(--dur-fast) var(--ease),
+             box-shadow var(--dur-fast) var(--ease);
 }
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--line-2);background:#111113;box-shadow:0 0 0 3px rgba(255,255,255,.05)}
 /* Chrome paints autofilled fields near-white, which is glaring on a dark
@@ -179,7 +208,7 @@ table.t th:first-child,table.t td:first-child{text-align:left;padding-left:2px}
 table.t th.sortable{cursor:pointer}
 table.t th.sortable:hover{color:var(--accent-2)}
 table.t td{padding:11px 12px;text-align:right;border-bottom:1px solid rgba(255,255,255,.07);white-space:nowrap}
-table.t tbody tr{transition:.12s}
+table.t tbody tr{transition:background var(--dur-fast) var(--ease)}
 table.t tbody tr:hover{background:rgba(255,255,255,.045)}
 table.t tbody tr.clickable{cursor:pointer}
 table.t td.num{font-family:var(--mono);letter-spacing:-.2px}
@@ -207,17 +236,21 @@ table.t tr:last-child td{border-bottom:none}
   position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.66);
 
   display:flex;align-items:flex-start;justify-content:center;padding:28px 16px;overflow-y:auto;
-  animation:fade .16s ease;
+  animation:fade var(--dur) var(--ease) both;
 }
+.scrim.closing{animation:fadeOut var(--dur-fast) var(--ease) both}
 @keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes fadeOut{from{opacity:1}to{opacity:0}}
 .modal{
   width:100%;max-width:560px;background:#18181b;
   border:1px solid var(--line-2);border-radius:var(--radius);
   box-shadow:0 30px 80px -30px rgba(0,0,0,.95);
-  animation:pop .18s cubic-bezier(.2,.9,.3,1.1);
+  animation:pop var(--dur-slow) var(--ease-out) both;
 }
+.scrim.closing .modal{animation:popOut var(--dur-fast) var(--ease) both}
 .modal.wide{max-width:920px}
-@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes popOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(4px) scale(.99)}}
 .modal-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
 .modal-head h3{margin:0;font-size:16px;font-weight:600}
 .modal-head .close{margin-left:auto}
@@ -229,10 +262,19 @@ table.t tr:last-child td{border-bottom:none}
 .toast{
   padding:10px 18px;border-radius:99px;background:#1f1f23;
   border:1px solid var(--line-2);font-size:13.5px;
-  box-shadow:0 14px 34px -16px rgba(0,0,0,.9);animation:rise .2s ease;max-width:90vw;
+  box-shadow:0 14px 34px -16px rgba(0,0,0,.9);max-width:90vw;
+  animation:rise var(--dur-slow) var(--ease-out) both;
 }
+.toast.out{animation:sink var(--dur) var(--ease) both}
 .toast.err{border-color:rgba(217,122,108,.4);color:#f0b9b1}
-@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+@keyframes sink{from{opacity:1;transform:none}to{opacity:0;transform:translateY(6px) scale(.98)}}
+
+/* Anyone who has asked their system to calm down gets no motion at all. */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;scroll-behavior:auto !important}
+}
 
 /* ---------- chart ---------- */
 .chart-box{position:relative;width:100%;height:280px}
@@ -342,6 +384,7 @@ footer.foot{text-align:center;padding:36px 16px 20px;color:var(--text-3);font-si
     <button class="tab" data-tab="port">Portfolio</button>
     <button class="tab" data-tab="screen">Screener</button>
     <button class="tab" data-tab="journal">Journal</button>
+    <span class="tab-ink init" id="tabInk"></span>
   </div>
 </nav>
 
@@ -415,7 +458,7 @@ function toast(msg, isErr=false){
   t.className = "toast" + (isErr?" err":"");
   t.textContent = msg;
   $("#toasts").appendChild(t);
-  setTimeout(()=>{ t.style.transition="opacity .3s"; t.style.opacity="0"; setTimeout(()=>t.remove(),300); }, isErr?4200:2400);
+  setTimeout(()=>{ t.classList.add("out"); setTimeout(()=>t.remove(), 220); }, isErr?4200:2400);
 }
 
 /* ============================ storage ============================ */
@@ -596,15 +639,33 @@ let TAB = "watch";
 const RENDERERS = {};
 
 function go(tab){
+  if(tab === TAB) return;
   TAB = tab;
   $$(".tab").forEach(b=>b.classList.toggle("on", b.dataset.tab===tab));
-  render();
+  moveTabInk();
   window.scrollTo({top:0});
+  render(true);
 }
-function render(){
-  $("#main").innerHTML = RENDERERS[TAB]();
+
+function moveTabInk(){
+  const ink = $("#tabInk"), on = $(".tab.on");
+  if(!ink || !on) return;
+  ink.style.width = on.offsetWidth + "px";
+  ink.style.transform = "translateX(" + on.offsetLeft + "px)";
+}
+
+function render(animate){
+  const main = $("#main");
+  main.innerHTML = RENDERERS[TAB]();
   if(RENDERERS[TAB+"After"]) RENDERERS[TAB+"After"]();
   $("#lastSync").textContent = S.lastSync ? "synced "+ago(S.lastSync) : "";
+  if(animate){
+    /* Restart the animation: without the reflow the class re-add is coalesced
+       and nothing plays on the second visit to a tab. */
+    main.classList.remove("swap");
+    void main.offsetWidth;
+    main.classList.add("swap");
+  }
 }
 
 $("#tabbar").addEventListener("click", e=>{
@@ -616,7 +677,7 @@ $("#tabbar").addEventListener("click", e=>{
 let onModalClose = null;
 let repaintChart = null;
 function modal(title, bodyHTML, footHTML="", wide=false){
-  closeModal();
+  closeModal(true);   /* replacing, so drop the old one without playing it out */
   const s = document.createElement("div");
   s.className = "scrim";
   s.innerHTML = `<div class="modal${wide?" wide":""}" role="dialog" aria-modal="true">
@@ -634,9 +695,18 @@ function modal(title, bodyHTML, footHTML="", wide=false){
   document.body.style.overflow = "hidden";
   return s;
 }
-function closeModal(){
+function closeModal(immediate){
   const s = $(".scrim");
-  if(s) s.remove();
+  if(s){
+    if(immediate){
+      s.remove();          /* being replaced, so no exit to play */
+    }else{
+      /* Let it play out, but stop it taking clicks on the way. */
+      s.classList.add("closing");
+      s.style.pointerEvents = "none";
+      setTimeout(()=>s.remove(), 140);
+    }
+  }
   document.body.style.overflow = "";
   if(onModalClose){ const f = onModalClose; onModalClose = null; f(); }
 }
@@ -726,7 +796,7 @@ function drawChart(box, full, rangeKey, showMA){
     <path d="${area}" fill="url(#ag)"/>
     ${showMA.m200 ? `<path d="${path(ma200)}" fill="none" stroke="${CSSV("--text-2")}" stroke-width="1.2" stroke-dasharray="5 4" opacity=".75"/>` : ""}
     ${showMA.m50 ? `<path d="${path(ma50)}" fill="none" stroke="${CSSV("--accent-2")}" stroke-width="1.2" opacity=".75"/>` : ""}
-    <path d="${line}" fill="none" stroke="${stroke}" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path class="price-line" d="${line}" fill="none" stroke="${stroke}" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/>
     <g id="cx" style="display:none">
       <line class="cx-line" y1="${P.t}" y2="${P.t+ih}"/>
       <circle r="3.5" fill="${stroke}" stroke="${CSSV("--ink")}" stroke-width="1.5"/>
@@ -735,6 +805,27 @@ function drawChart(box, full, rangeKey, showMA){
 
   const svg = box.querySelector("svg"), cx = box.querySelector("#cx"), tip = box.querySelector(".tip");
   const cxLine = cx.querySelector("line"), cxDot = cx.querySelector("circle");
+
+  /* Draw the price line on rather than snapping it in. Cheap: one path, one
+     dashoffset, and it is skipped entirely under reduced motion. */
+  const calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const pl = svg.querySelector(".price-line");
+  if(pl && !calm){
+    try{
+      const len = pl.getTotalLength();
+      if(len && isFinite(len)){
+        pl.style.strokeDasharray = len + "px";
+        pl.style.strokeDashoffset = len + "px";
+        /* The path was created this frame, so the browser has no committed
+           start value to transition from and would snap straight to the end.
+           Reading a layout property forces that first value to stick. */
+        void pl.getBoundingClientRect();
+        pl.style.transition = "stroke-dashoffset 520ms cubic-bezier(.22,1,.36,1)";
+        pl.style.strokeDashoffset = "0px";
+        setTimeout(()=>{ pl.style.strokeDasharray = ""; pl.style.transition = ""; }, 620);
+      }
+    }catch(e){}
+  }
 
   function move(ev){
     const r = svg.getBoundingClientRect();
@@ -2250,6 +2341,9 @@ $("#btnAccount").onclick = accountModal;
 paintAccount();
 
 render();
+moveTabInk();
+requestAnimationFrame(()=>{ const k = $("#tabInk"); if(k) k.classList.remove("init"); });
+window.addEventListener("resize", moveTabInk);
 
 /* Runs before the routine sync: a confirmation or reset link arrives with the
    session in the URL, and must be consumed before anything else touches it. */

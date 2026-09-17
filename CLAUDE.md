@@ -135,6 +135,29 @@ was removed to get here. Hold the line on:
   chart. The 200 day average is **dashed** for that reason — pattern, not
   brightness. Do not "fix" this by tinting it.
 
+### Motion
+Durations and easings are tokens (`--dur-fast`, `--dur`, `--dur-slow`,
+`--ease`, `--ease-out`). Everything animates `transform` and `opacity` only, so
+nothing in the app triggers layout while moving. `prefers-reduced-motion` is
+honoured globally and the chart's draw-in checks it in JS as well.
+
+Three things here are load-bearing and easy to undo by accident:
+
+- `html { scrollbar-gutter: stable }`. Opening a modal sets `body` overflow to
+  hidden; without the reserved gutter the entire page jolts sideways as the
+  scrollbar vanishes. That was the single worst piece of jank.
+- **`render(animate)` only animates when passed `true`, and only `go()` does
+  that.** `render()` is called on every save, so animating unconditionally
+  turns ordinary edits into a light show.
+- The chart's draw-in needs `void pl.getBoundingClientRect()` between setting
+  the start offset and the end offset. The path is created in the same frame,
+  so without forcing that style flush the browser has no start value and snaps
+  straight to the end — it silently does nothing rather than erroring.
+
+The tab underline is one travelling element (`#tabInk`), positioned by
+`moveTabInk()` on tab change, at boot and on resize. Its `init` class suppresses
+the transition for the first placement so it does not fly in from the left.
+
 All chart and sparkline colours are read from the CSS variables via `CSSV()`,
 so a palette change is a token change and never a hunt through drawing code.
 The icon in `build.py` carries the same palette and must be regenerated with
