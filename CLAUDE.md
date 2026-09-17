@@ -38,6 +38,17 @@ Finnhub and Twelve Data could be dropped.
 The service worker deliberately does **not** cache provider responses — only
 same-origin app files. Stale quotes are worse than no quotes.
 
+**The page and manifest are fetched network-first; static assets are
+cache-first.** This is not a style choice. With a cache-first document the
+first load after every deploy served the *previous* build and only the second
+load showed the new one — so a change looked like it had not shipped, and a
+build could be judged on stale code. Offline is unaffected: the network fetch
+fails and the handler falls back to the cache. Verified with the dev server
+actually stopped.
+
+**Bump `VERSION` in `build.py` before every deploy.** It names the cache, and
+the activate handler deletes every cache that is not the current one.
+
 ## Supabase sync (optional)
 Signed out, or with `SUPA` unfilled, none of this runs and every feature still
 works — the app is local first and stays that way.
