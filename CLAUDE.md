@@ -84,6 +84,18 @@ JSON object with `_tag: "Error"` and no changes, which is easy to mistake for
 A failed token refresh clears the session and re-renders on purpose, so the app
 never sits there looking signed in while every sync quietly fails.
 
+Password reset is two screens, both separate from the sign-in form:
+`resetRequestModal()` asks for the address, and the emailed link opens
+`newPasswordModal()`. The "if that address has an account" wording is
+deliberate — naming which addresses exist would let anyone test emails against
+the project.
+
+**Field styling is keyed to input types by name.** The base input rule lists
+`text`, `number`, `date`, `password`, `email`, `search`, `tel` and `url`. A new
+input type that is not in that list silently falls back to the browser default,
+which is a white box on this dark theme. That is exactly how the email fields
+broke once already.
+
 ## Design
 **Obsidian and platinum.** Near-black neutral base (`#0a0a0b`) with a single
 platinum accent (`#e8e8ec`). Chosen over four alternatives for "clean, modern,

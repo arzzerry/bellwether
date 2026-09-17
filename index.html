@@ -132,12 +132,23 @@ nav.tabs{
 .btn:disabled{opacity:.42;cursor:not-allowed}
 
 /* ---------- inputs ---------- */
-input[type=text],input[type=number],input[type=date],input[type=password],select,textarea{
+input[type=text],input[type=number],input[type=date],input[type=password],input[type=email],input[type=search],input[type=tel],input[type=url],select,textarea{
   width:100%;padding:9px 11px;border-radius:var(--radius-sm);
   border:1px solid var(--line);background:#0e0e10;color:var(--text);
   font-size:14px;transition:.15s;
 }
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--line-2);background:#111113;box-shadow:0 0 0 3px rgba(255,255,255,.05)}
+/* Chrome paints autofilled fields near-white, which is glaring on a dark
+   theme. There is no background-color override for it, so the fill is faked
+   with an inset shadow and the long transition keeps it from flashing. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus{
+  -webkit-text-fill-color:var(--text);
+  -webkit-box-shadow:0 0 0 1000px #0e0e10 inset;
+  caret-color:var(--text);
+  transition:background-color 9999s ease-out 0s;
+}
 input::placeholder,textarea::placeholder{color:var(--text-3)}
 textarea{resize:vertical;min-height:70px;line-height:1.55}
 select{appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 9px center;background-size:15px;padding-right:32px}
@@ -2062,14 +2073,7 @@ function authFormModal(mode){
   $("#auSwap").onclick = ()=>authFormModal(isUp ? "signin" : "signup");
 
   const forgot = $("#auForgot");
-  if(forgot) forgot.onclick = async ()=>{
-    const e0 = $("#auEmail").value.trim();
-    if(!e0 || !e0.includes("@")){ msg("Enter your email address first, then press reset.", "err"); return; }
-    try{
-      await authCall("/recover", {email:e0});
-      msg("If that address has an account, a reset link is on its way. Open it on this device and it brings you back here to set a new one.", "ok");
-    }catch(e){ msg(e.message, "err"); }
-  };
+  if(forgot) forgot.onclick = ()=>resetRequestModal($("#auEmail").value.trim());
 
   setTimeout(()=>{ const el = $("#auEmail"); if(el) el.focus(); }, 60);
 }
@@ -2111,6 +2115,64 @@ async function whoAmI(token){
   if(!r.ok) throw new Error("Could not read the account for that link.");
   const j = await r.json();
   return {id:j.id, email:j.email};
+}
+
+/* Step one of two in a password reset. Kept as its own screen rather than a
+   link tucked inside the sign-in form, so it is always obvious which process
+   you are in and what the next step is. Step two is newPasswordModal(), which
+   the emailed link opens. */
+function resetRequestModal(prefill){
+  modal("Reset your password", `
+    <p class="note" style="margin-bottom:14px;font-size:13.5px;line-height:1.65">
+      Enter the email you signed up with and we will send you a link. Open it on
+      this device and it brings you straight back here to choose a new password.
+    </p>
+    <form id="rqForm">
+      <label class="fld"><span>Email</span>
+        <input type="email" id="rqEmail" autocomplete="username" inputmode="email"
+               autocapitalize="off" spellcheck="false" placeholder="you@example.com"
+               value="${esc(prefill || "")}" /></label>
+      <button type="submit" hidden></button>
+    </form>
+    <p id="rqMsg" class="note" style="min-height:20px;margin:0"></p>
+  `, `<button class="btn ghost" id="rqBack">Back to sign in</button><button class="btn primary" id="rqGo">Send the link</button>`);
+
+  const msg = (t, kind) => {
+    const e = $("#rqMsg");
+    e.textContent = t;
+    e.style.color = kind === "err" ? "var(--down)" : (kind === "ok" ? "var(--up)" : "var(--text-3)");
+  };
+
+  let busy = false;
+  async function send(){
+    if(busy) return;
+    const email = $("#rqEmail").value.trim();
+    if(!email || !email.includes("@")){ msg("Enter the email address you signed up with.", "err"); return; }
+
+    busy = true;
+    const btn = $("#rqGo");
+    btn.disabled = true; btn.textContent = "Sending\u2026";
+    try{
+      await authCall("/recover", {email});
+      /* Deliberately not "we sent it": confirming which addresses have accounts
+         would let anyone test emails against this project. */
+      msg("If that address has an account, a link is on its way. It expires after an hour, so open it soon.", "ok");
+      btn.textContent = "Send it again";
+    }catch(e){
+      const m = /rate|frequency|too many/i.test(e.message)
+        ? "That was sent very recently. Wait a minute before asking for another."
+        : e.message;
+      msg(m, "err");
+      btn.textContent = "Send the link";
+    }finally{
+      busy = false; btn.disabled = false;
+    }
+  }
+
+  $("#rqGo").onclick = send;
+  $("#rqForm").onsubmit = e => { e.preventDefault(); send(); };
+  $("#rqBack").onclick = ()=>authFormModal("signin");
+  setTimeout(()=>{ const el = $("#rqEmail"); if(el){ el.focus(); el.select(); } }, 60);
 }
 
 function newPasswordModal(){
