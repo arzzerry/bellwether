@@ -62,10 +62,31 @@ works — the app is local first and stays that way.
   sync block from Settings -> API, then rebuild.
 
 ## Design
-Deep teal base (`#0a1414`) with a sand accent (`#d8c9a3`). Chosen because the
-user asked for colours entirely unlike his other four projects, so do not drift
-this back towards the usual blue, purple or orange house palette. Green and red
-are reserved strictly for gains and losses, never for interface state.
+**Obsidian and platinum.** Near-black neutral base (`#0a0a0b`) with a single
+platinum accent (`#e8e8ec`). Chosen over four alternatives for "clean, modern,
+premium", and deliberately unlike the other four projects, so do not drift it
+back towards the usual blue, purple or orange house palette.
+
+The treatment matters as much as the palette, and an earlier glassmorphism pass
+was removed to get here. Hold the line on:
+
+- **Flat surfaces.** No backdrop blur, no frosted panels, no noise overlay, no
+  colour washes. One barely-there radial lift at the top of the page is the
+  only gradient in the app.
+- **Hairline borders** (`--line`, white at 7.5%) and tight radii (12px cards,
+  9px controls). Depth comes from a 1px shadow at most.
+- **Colour is spent only where it carries meaning.** Green and red belong to
+  gains and losses and nothing else; the platinum accent marks what is
+  actionable. Everything else is a neutral, and hierarchy is carried by weight
+  and space.
+- Because the theme is near-monochrome, two greys cannot be told apart in a
+  chart. The 200 day average is **dashed** for that reason — pattern, not
+  brightness. Do not "fix" this by tinting it.
+
+All chart and sparkline colours are read from the CSS variables via `CSSV()`,
+so a palette change is a token change and never a hunt through drawing code.
+The icon in `build.py` carries the same palette and must be regenerated with
+`BW_ICONS=1` if the tokens move.
 
 ## Hosting
 No secrets, no backend — safe as a public repo.

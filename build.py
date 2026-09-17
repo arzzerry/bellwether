@@ -19,14 +19,15 @@ import re
 import struct
 import zlib
 
-VERSION = "1.2"
+VERSION = "1.3"
 HERE = os.path.dirname(os.path.abspath(__file__))
 DOCS = os.path.join(HERE, "docs")
 
-TEAL = (14, 28, 27)
-TEAL_MID = (23, 48, 46)
-SAND = (216, 201, 163)
-SEA = (127, 176, 163)
+# Obsidian and platinum, matching the app's tokens.
+INK = (10, 10, 11)
+INK_LIFT = (28, 28, 32)
+PLATINUM = (232, 232, 236)
+GREEN = (70, 193, 126)
 
 
 # ---------------------------------------------------------------- png writer
@@ -86,14 +87,14 @@ def make_icon(path, size):
             # background: a soft teal lift towards the top left corner
             d = ((px - cx) ** 2 + (py - cy) ** 2) ** 0.5 / radius
             mix = max(0.0, min(1.0, 1.0 - d * 0.9))
-            col = tuple(int(TEAL[i] + (TEAL_MID[i] - TEAL[i]) * mix) for i in range(3))
+            col = tuple(int(INK[i] + (INK_LIFT[i] - INK[i]) * mix) for i in range(3))
 
             if (px - dot[0]) ** 2 + (py - dot[1]) ** 2 <= dot[2] ** 2:
-                col = SEA
+                col = GREEN
             else:
                 for (x1, y1, x2, y2) in segments:
                     if dist_to_segment(px, py, x1, y1, x2, y2) <= stroke:
-                        col = SAND
+                        col = PLATINUM
                         break
 
             row += bytes(col)
@@ -145,8 +146,8 @@ MANIFEST = """{
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#0a1414",
-  "theme_color": "#0a1414",
+  "background_color": "#0a0a0b",
+  "theme_color": "#0a0a0b",
   "icons": [
     { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
     { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
